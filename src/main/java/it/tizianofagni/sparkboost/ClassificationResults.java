@@ -19,19 +19,25 @@
 
 package it.tizianofagni.sparkboost;
 
+import java.io.Serializable;
+
 /**
  * @author Tiziano Fagni (tiziano.fagni@isti.cnr.it)
  */
-public class ClassificationResults {
+public class ClassificationResults implements Serializable {
     private final int numDocs;
+    private final int[] documents;
     private final int[][] labels;
     private final double[][] scores;
+    private final int[][] goldLabels;
     private final ContingencyTable ct;
 
-    public ClassificationResults(int numDocs, int[][] labels, double[][] scores, ContingencyTable ct) {
+    public ClassificationResults(int numDocs, int[] documents, int[][] labels, double[][] scores, int[][] goldLabels, ContingencyTable ct) {
         this.numDocs = numDocs;
+        this.documents = documents;
         this.labels = labels;
         this.scores = scores;
+        this.goldLabels = goldLabels;
         this.ct = ct;
     }
 
@@ -49,5 +55,13 @@ public class ClassificationResults {
 
     public ContingencyTable getCt() {
         return ct;
+    }
+
+    public int[][] getGoldLabels() {
+        return goldLabels;
+    }
+
+    public int[] getDocuments() {
+        return documents;
     }
 }

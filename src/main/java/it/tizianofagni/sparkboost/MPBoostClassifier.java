@@ -20,7 +20,6 @@ package it.tizianofagni.sparkboost;/*
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.broadcast.Broadcast;
-import org.apache.spark.storage.StorageLevel;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -33,13 +32,13 @@ import java.util.Iterator;
  */
 public class MPBoostClassifier implements Serializable {
 
-    private class DocumentClassification implements Serializable {
+    private class PreliminaryDocumentClassification implements Serializable {
         private final int documentID;
         private final int[] goldLabels;
         private final double[] scores;
 
 
-        public DocumentClassification(int documentID, int[] goldLabels, double[] scores) {
+        public PreliminaryDocumentClassification(int documentID, int[] goldLabels, double[] scores) {
             this.documentID = documentID;
             this.goldLabels = goldLabels;
             this.scores = scores;
@@ -55,6 +54,42 @@ public class MPBoostClassifier implements Serializable {
 
         public int[] getGoldLabels() {
             return goldLabels;
+        }
+    }
+
+    private class FinalDocumentClassification implements Serializable{
+        private final int documentID;
+        private final int[] labelsAssigned;
+        private final double[] scoresAssigned;
+        private final int[] goldLabels;
+        private final ContingencyTable ct;
+
+        public FinalDocumentClassification(int documentID, int[] labelsAssigned, double[] scoresAssigned, int[] goldLabels, ContingencyTable ct) {
+            this.documentID = documentID;
+            this.labelsAssigned = labelsAssigned;
+            this.scoresAssigned = scoresAssigned;
+            this.goldLabels = goldLabels;
+            this.ct = ct;
+        }
+
+        public int getDocumentID() {
+            return documentID;
+        }
+
+        public int[] getLabelsAssigned() {
+            return labelsAssigned;
+        }
+
+        public double[] getScoresAssigned() {
+            return scoresAssigned;
+        }
+
+        public int[] getGoldLabels() {
+            return goldLabels;
+        }
+
+        public ContingencyTable getCt() {
+            return ct;
         }
     }
 
@@ -76,12 +111,13 @@ public class MPBoostClassifier implements Serializable {
         if (parallelismDegree < 1)
             throw new IllegalArgumentException("The parallelism degree is less than 1");
         System.out.println("Load initial data and generating all necessary internal data representations...");
-        JavaRDD<MultilabelPoint> docs = DataUtils.loadLibSvmFileFormatDataAsList(sc, libSvmFile).cache();
-        int numDocs = DataUtils.getNumDocuments(docs);
+        JavaRDD<MultilabelPoint> docs = DataUtils.loadLibSvmFileFormatDataAsList(sc, libSvmFile)
+                .repartition(parallelismDegree)
+                .cache();
         System.out.println("done!");
         System.out.println("Classifying documents...");
         Broadcast<WeakHypothesis[]> whsBr = sc.broadcast(whs);
-        Iterator<DocumentClassification> classifications = docs.map(doc -> {
+        ClassificationResults classifications = docs.map(doc -> {
             WeakHypothesis[] whs = whsBr.getValue();
             int[] indices = doc.getFeatures().indices();
             HashMap<Integer, Integer> dict = new HashMap<Integer, Integer>();
@@ -101,21 +137,14 @@ public class MPBoostClassifier implements Serializable {
                 }
             }
 
-            return new DocumentClassification(doc.getDocID(), doc.getLabels(), scores);
-        }).toLocalIterator();
-
-
-        int[][] labels = new int[numDocs][];
-        double[][] scores = new double[numDocs][];
-        int tp = 0, tn = 0, fp = 0, fn = 0;
-        while (classifications.hasNext()) {
-            DocumentClassification dc = classifications.next();
+            PreliminaryDocumentClassification dc = new PreliminaryDocumentClassification(doc.getDocID(), doc.getLabels(), scores);
             HashSet<Integer> goldLabels = new HashSet<>();
             for (int labelID : dc.getGoldLabels())
                 goldLabels.add(labelID);
             int docID = dc.getDocumentID();
             ArrayList<Integer> labelAssigned = new ArrayList<>();
             ArrayList<Double> labelScores = new ArrayList<>();
+            int tp = 0, fp = 0, fn = 0, tn = 0;
             for (int labelID = 0; labelID < dc.getScores().length; labelID++) {
                 double score = dc.getScores()[labelID];
                 boolean hasGoldLabel = goldLabels.contains(labelID);
@@ -133,10 +162,56 @@ public class MPBoostClassifier implements Serializable {
                     tn++;
                 }
             }
-            labels[docID] = labelAssigned.stream().mapToInt(i->i).toArray();
-            scores[docID] = labelScores.stream().mapToDouble(i->i).toArray();
-        }
+            ContingencyTable ct = new ContingencyTable(tp, tn, fp, fn);
+            int[][] labelsRet = new int[1][];
+            labelsRet[0] = labelAssigned.stream().mapToInt(i->i).toArray();
+            double[][] scoresRet = new double[1][];
+            scoresRet[0] = labelScores.stream().mapToDouble(i->i).toArray();
+            int[][] goldLabelsRet = new int[1][];
+            goldLabelsRet[0] = dc.getGoldLabels();
+            int[] documents = new int[]{docID};
+
+            return new ClassificationResults(1, documents, labelsRet, scoresRet, goldLabelsRet, ct);
+
+
+        }).reduce((cl1, cl2)->{
+            int numDocuments = cl1.getNumDocs()+cl2.getNumDocs();
+            ContingencyTable ct = new ContingencyTable(cl1.getCt().tp()+cl2.getCt().tp(),
+                    cl1.getCt().tn()+cl2.getCt().tn(), cl1.getCt().fp()+cl2.getCt().fp(),
+                    cl1.getCt().fn()+cl2.getCt().fn());
+            int[] documents = new int[numDocuments];
+
+            // Copy document IDs.
+            for (int i = 0; i < cl1.getNumDocs(); i++)
+                documents[i] = cl1.getDocuments()[i];
+            for (int i = cl1.getNumDocs(); i < numDocuments;i++)
+                documents[i] = cl2.getDocuments()[i-cl1.getNumDocs()];
+
+            // Copy label IDs.
+            int[][] labels = new int[numDocuments][];
+            for (int i = 0; i < cl1.getNumDocs(); i++)
+                labels[i] = cl1.getLabels()[i];
+            for (int i = cl1.getNumDocs(); i < numDocuments;i++)
+                labels[i] = cl2.getLabels()[i-cl1.getNumDocs()];
+
+            // Copy score IDs.
+            double[][] scores = new double[numDocuments][];
+            for (int i = 0; i < cl1.getNumDocs(); i++)
+                scores[i] = cl1.getScores()[i];
+            for (int i = cl1.getNumDocs(); i < numDocuments;i++)
+                scores[i] = cl2.getScores()[i-cl1.getNumDocs()];
+
+            // Copy gold label IDs.
+            int[][] goldLabels = new int[numDocuments][];
+            for (int i = 0; i < cl1.getNumDocs(); i++)
+                goldLabels[i] = cl1.getGoldLabels()[i];
+            for (int i = cl1.getNumDocs(); i < numDocuments;i++)
+                goldLabels[i] = cl2.getGoldLabels()[i-cl1.getNumDocs()];
+
+            return new ClassificationResults(numDocuments, documents, labels, scores, goldLabels, ct);
+        });
+
         System.out.println("done.");
-        return new ClassificationResults(numDocs, labels, scores, new ContingencyTable(tp, tn, fp, fn));
+        return classifications;
     }
 }

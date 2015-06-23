@@ -41,16 +41,23 @@ public class MPBoostLearnerExe {
         String sparkMaster = args[3];
         int parallelismDegree = Integer.parseInt(args[4]);
 
+        // Create and configure Spark context.
         SparkConf conf = new SparkConf().setAppName("Spark MPBoost learner");
         conf.setMaster(sparkMaster);
         conf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer");
         JavaSparkContext sc = new JavaSparkContext(conf);
 
+        // Create and configure learner.
         MpBoostLearner learner = new MpBoostLearner(sc);
         learner.setNumIterations(numIterations);
         learner.setParallelismDegree(parallelismDegree);
+
+        // Build classifier with MPBoost learner.
         MPBoostClassifier classifier = learner.buildModel(inputFile);
+
+        // Save classifier to disk.
         DataUtils.saveModel(classifier, outputFile);
+
         long endTime = System.currentTimeMillis();
         System.out.println("Execution time: "+(endTime-startTime)+" milliseconds.");
     }

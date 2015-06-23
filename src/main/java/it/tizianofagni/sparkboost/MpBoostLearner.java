@@ -118,11 +118,11 @@ public class MpBoostLearner {
 
     public MPBoostClassifier buildModel(String libSvmFile) {
         System.out.println("Load initial data and generating all necessary internal data representations...");
-        JavaRDD<MultilabelPoint> docs = DataUtils.loadLibSvmFileFormatData(sc, libSvmFile).repartition(getParallelismDegree()).persist(StorageLevel.MEMORY_ONLY_SER());
+        JavaRDD<MultilabelPoint> docs = DataUtils.loadLibSvmFileFormatData(sc, libSvmFile).repartition(getParallelismDegree()).persist(StorageLevel.MEMORY_AND_DISK_SER());
         int numDocs = DataUtils.getNumDocuments(docs);
         int numLabels = DataUtils.getNumLabels(docs);
-        JavaRDD<DataUtils.LabelDocuments> labelDocuments = DataUtils.getLabelDocuments(docs).repartition(getParallelismDegree()).persist(StorageLevel.MEMORY_ONLY_SER());
-        JavaRDD<DataUtils.FeatureDocuments> featureDocuments = DataUtils.getFeatureDocuments(docs).repartition(getParallelismDegree()).persist(StorageLevel.MEMORY_ONLY_SER());
+        JavaRDD<DataUtils.LabelDocuments> labelDocuments = DataUtils.getLabelDocuments(docs).repartition(getParallelismDegree()).persist(StorageLevel.MEMORY_AND_DISK_SER());
+        JavaRDD<DataUtils.FeatureDocuments> featureDocuments = DataUtils.getFeatureDocuments(docs).repartition(getParallelismDegree()).persist(StorageLevel.MEMORY_AND_DISK_SER());
         System.out.println("Ok, done!");
 
         WeakHypothesis[] computedWH = new WeakHypothesis[numIterations];
