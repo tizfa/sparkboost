@@ -33,7 +33,7 @@ import java.util.Iterator;
  */
 public class MPBoostClassifier implements Serializable {
 
-    private class DocumentClassification {
+    private class DocumentClassification implements Serializable {
         private final int documentID;
         private final int[] goldLabels;
         private final double[] scores;
@@ -68,9 +68,15 @@ public class MPBoostClassifier implements Serializable {
     }
 
 
-    ClassificationResults classify(JavaSparkContext sc, String libSvmFile) {
+    ClassificationResults classify(JavaSparkContext sc, String libSvmFile, int parallelismDegree) {
+        if (sc == null)
+            throw new NullPointerException("The Spark context is 'null'");
+        if (libSvmFile == null || libSvmFile.isEmpty())
+            throw new IllegalArgumentException("The data file is 'null' or empty");
+        if (parallelismDegree < 1)
+            throw new IllegalArgumentException("The parallelism degree is less than 1");
         System.out.println("Load initial data and generating all necessary internal data representations...");
-        JavaRDD<MultilabelPoint> docs = DataUtils.loadLibSvmFileFormatDataAsList(sc, libSvmFile).persist(StorageLevel.MEMORY_AND_DISK());
+        JavaRDD<MultilabelPoint> docs = DataUtils.loadLibSvmFileFormatDataAsList(sc, libSvmFile).cache();
         int numDocs = DataUtils.getNumDocuments(docs);
         System.out.println("done!");
         System.out.println("Classifying documents...");
@@ -97,7 +103,8 @@ public class MPBoostClassifier implements Serializable {
 
             return new DocumentClassification(doc.getDocID(), doc.getLabels(), scores);
         }).toLocalIterator();
-        int[] documents = new int[numDocs];
+
+
         int[][] labels = new int[numDocs][];
         double[][] scores = new double[numDocs][];
         int tp = 0, tn = 0, fp = 0, fn = 0;

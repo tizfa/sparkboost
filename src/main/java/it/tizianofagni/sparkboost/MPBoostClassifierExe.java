@@ -31,22 +31,25 @@ import java.util.Arrays;
  */
 public class MPBoostClassifierExe {
     public static void main(String[] args) {
-        if (args.length != 4) {
-            System.out.println("Usage: "+MPBoostClassifierExe.class.getName()+" <inputFile> <inputModel> <outputFile> <sparkMaster>");
+        if (args.length != 5) {
+            System.out.println("Usage: "+MPBoostClassifierExe.class.getName()+" <inputFile> <inputModel> <outputFile> <sparkMaster> <parallelismDegree>");
+            System.exit(-1);
         }
 
+        long startTime = System.currentTimeMillis();
         String inputFile = args[0];
         String inputModel = args[1];
         String outputFile = args[2];
         String sparkMaster = args[3];
+        int parallelismDegree = Integer.parseInt(args[4]);
 
         SparkConf conf = new SparkConf().setAppName("Spark MPBoost classifier");
         conf.setMaster(sparkMaster);
         JavaSparkContext sc = new JavaSparkContext(conf);
         MPBoostClassifier classifier = DataUtils.loadModel(inputModel);
-        ClassificationResults results = classifier.classify(sc, inputFile);
+        ClassificationResults results = classifier.classify(sc, inputFile, parallelismDegree);
         StringBuilder sb = new StringBuilder();
-        sb.append("**** Results measures\n");
+        sb.append("**** Effectiveness\n");
         sb.append(results.getCt().toString()+"\n");
         sb.append("********\n");
         for (int i = 0; i < results.getNumDocs(); i++) {
@@ -59,5 +62,7 @@ public class MPBoostClassifierExe {
         } catch (Exception e) {
             throw new RuntimeException("Writing clasisfication results", e);
         }
+        long endTime = System.currentTimeMillis();
+        System.out.println("Execution time: "+(endTime-startTime)+" milliseconds.");
     }
 }

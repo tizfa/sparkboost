@@ -20,10 +20,11 @@
 package it.tizianofagni.sparkboost;
 
 
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.mllib.linalg.SparseVector;
-import org.apache.spark.mllib.linalg.Vector;
 import org.apache.spark.mllib.linalg.Vectors;
 import scala.Tuple2;
 
@@ -38,7 +39,7 @@ import java.util.List;
  */
 public class DataUtils {
 
-    public static class LabelDocuments {
+    public static class LabelDocuments implements Serializable {
         private final int labelID;
         private final int[] documents;
 
@@ -57,7 +58,7 @@ public class DataUtils {
     }
 
 
-    public static class FeatureDocuments {
+    public static class FeatureDocuments implements Serializable {
         private final int featureID;
         private final int[] documents;
         private final int[][] labels;
@@ -83,8 +84,9 @@ public class DataUtils {
 
 
     /**
-     * Load data file in LibSVm format. The documents IDs are assigned according to the row inde xin the original
-     * file, i.e. useful at classification time.
+     * Load data file in LibSVm format. The documents IDs are assigned according to the row index in the original
+     * file, i.e. useful at classification time. We are assuming that the feature IDs are the same as the training
+     * file used to build the classification model.
      *
      * @param sc       The spark context.
      * @param dataFile The data file.
@@ -97,7 +99,7 @@ public class DataUtils {
             throw new IllegalArgumentException("The dataFile is 'null'");
 
         JavaRDD<String> lines = sc.textFile(dataFile).cache();
-        int maxFeatureID = computeMaximumFeatureID(lines);
+        int numFeatures = computeNumFeatures(lines);
 
         ArrayList<MultilabelPoint> points = new ArrayList<>();
         try {
@@ -114,6 +116,7 @@ public class DataUtils {
                     int[] labels = new int[t.length];
                     for (int i = 0; i < t.length; i++) {
                         String label = t[i];
+                        // Labels in multiclass should be already 0-based.
                         labels[i] = new Double(Double.parseDouble(label)).intValue();
                     }
                     ArrayList<Integer> indexes = new ArrayList<Integer>();
@@ -124,13 +127,14 @@ public class DataUtils {
                             // Beginning of a comment. Skip it.
                             break;
                         String[] featInfo = data.split(":");
-                        int featID = Integer.parseInt(featInfo[0]);
+                        // Transform feature ID value in 0-based.
+                        int featID = Integer.parseInt(featInfo[0])-1;
                         double value = Double.parseDouble(featInfo[1]);
                         indexes.add(featID);
                         values.add(value);
                     }
 
-                    SparseVector v = (SparseVector) Vectors.sparse(maxFeatureID, indexes.stream().mapToInt(i -> i).toArray(), values.stream().mapToDouble(i -> i).toArray());
+                    SparseVector v = (SparseVector) Vectors.sparse(numFeatures, indexes.stream().mapToInt(i -> i).toArray(), values.stream().mapToDouble(i -> i).toArray());
                     points.add(new MultilabelPoint(docID, v, labels));
 
                     line = br.readLine();
@@ -160,19 +164,21 @@ public class DataUtils {
         if (dataFile == null || dataFile.isEmpty())
             throw new IllegalArgumentException("The dataFile is 'null'");
         JavaRDD<String> lines = sc.textFile(dataFile).cache();
-        int maxFeatureID = computeMaximumFeatureID(lines);
-        JavaRDD<MultilabelPoint> docs = lines.zipWithIndex().map(item -> {
+        int localNumFeatures = computeNumFeatures(lines);
+        Broadcast<Integer> distNumFeatures = sc.broadcast(localNumFeatures);
+        JavaRDD<MultilabelPoint> docs = lines.filter(line->!line.isEmpty()).zipWithIndex().map(item -> {
+            int numFeatures = distNumFeatures.getValue();
             String line = item._1();
             long indexLong = item._2();
             int index = (int) indexLong;
-            if (line.isEmpty())
-                return null;
             String[] fields = line.split("\\s+");
             String[] t = fields[0].split(",");
             int[] labels = new int[t.length];
             for (int i = 0; i < t.length; i++) {
                 String label = t[i];
+                // Labels should be already 0-based.
                 labels[i] = new Double(Double.parseDouble(label)).intValue();
+                assert(labels[i] >= 0);
             }
             ArrayList<Integer> indexes = new ArrayList<Integer>();
             ArrayList<Double> values = new ArrayList<Double>();
@@ -182,13 +188,14 @@ public class DataUtils {
                     // Beginning of a comment. Skip it.
                     break;
                 String[] featInfo = data.split(":");
-                int featID = Integer.parseInt(featInfo[0]);
+                // Transform feature ID value in 0-based.
+                int featID = Integer.parseInt(featInfo[0]) - 1;
                 double value = Double.parseDouble(featInfo[1]);
                 indexes.add(featID);
                 values.add(value);
             }
 
-            SparseVector v = (SparseVector) Vectors.sparse(maxFeatureID, indexes.stream().mapToInt(i -> i).toArray(), values.stream().mapToDouble(i -> i).toArray());
+            SparseVector v = (SparseVector) Vectors.sparse(numFeatures, indexes.stream().mapToInt(i -> i).toArray(), values.stream().mapToDouble(i -> i).toArray());
             return new MultilabelPoint(index, v, labels);
         });
 
@@ -196,17 +203,11 @@ public class DataUtils {
     }
 
 
-    protected static int computeMaximumFeatureID(JavaRDD<String> lines) {
+    protected static int computeNumFeatures(JavaRDD<String> lines) {
         int maxFeatureID = lines.map(line -> {
             if (line.isEmpty())
                 return -1;
             String[] fields = line.split("\\s+");
-            ArrayList<Double> labels = new ArrayList<Double>();
-            String[] t = fields[0].split(",");
-            for (String label : t) {
-                labels.add(Double.parseDouble(label));
-            }
-
             int maximumFeatID = 0;
             for (int j = 1; j < fields.length; j++) {
                 String data = fields[j];
@@ -215,7 +216,7 @@ public class DataUtils {
                     break;
                 String[] featInfo = data.split(":");
                 int featID = Integer.parseInt(featInfo[0]);
-                maximumFeatID = featID;
+                maximumFeatID = Math.max(featID, maximumFeatID);
             }
             return maximumFeatID;
         }).reduce((val1, val2) -> val1 < val2 ? val2 : val1);
@@ -233,9 +234,11 @@ public class DataUtils {
     public static int getNumLabels(JavaRDD<MultilabelPoint> documents) {
         if (documents == null)
             throw new NullPointerException("The documents RDD is 'null'");
-        return (int) documents.flatMap(doc -> {
-            return Arrays.asList(doc.getLabels());
-        }).distinct().count();
+        int maxValidLabelID = documents.map(doc -> {
+            List<Integer> values = Arrays.asList(ArrayUtils.toObject(doc.getLabels()));
+            return Collections.max(values);
+        }).reduce((m1,m2)->Math.max(m1,m2));
+        return maxValidLabelID+1;
     }
 
     public static int getNumFeatures(JavaRDD<MultilabelPoint> documents) {
@@ -244,13 +247,6 @@ public class DataUtils {
         return documents.take(1).get(0).getFeatures().size();
     }
 
-
-    public static MultilabelPoint getDocument(JavaRDD<MultilabelPoint> documents, int docID) {
-        List<MultilabelPoint> docs = documents.filter(doc -> doc.getDocID() == docID).collect();
-        if (docs.size() == 0)
-            throw new IllegalArgumentException("Can not find document ID " + docID);
-        return docs.get(0);
-    }
 
 
     public static JavaRDD<LabelDocuments> getLabelDocuments(JavaRDD<MultilabelPoint> documents) {

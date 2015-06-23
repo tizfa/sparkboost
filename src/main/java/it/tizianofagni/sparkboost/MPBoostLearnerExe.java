@@ -29,22 +29,29 @@ import org.apache.spark.api.java.JavaSparkContext;
  */
 public class MPBoostLearnerExe {
     public static void main(String[] args) {
-        if (args.length != 4) {
-            System.out.println("Usage: "+MPBoostLearnerExe.class.getName()+" <inputFile> <outputFile> <numIterations> <sparkMaster>");
+        if (args.length != 5) {
+            System.out.println("Usage: "+MPBoostLearnerExe.class.getName()+" <inputFile> <outputFile> <numIterations> <sparkMaster> <parallelismDegree>");
+            System.exit(-1);
         }
 
+        long startTime = System.currentTimeMillis();
         String inputFile = args[0];
         String outputFile = args[1];
         int numIterations = Integer.parseInt(args[2]);
         String sparkMaster = args[3];
+        int parallelismDegree = Integer.parseInt(args[4]);
 
         SparkConf conf = new SparkConf().setAppName("Spark MPBoost learner");
         conf.setMaster(sparkMaster);
+        conf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer");
         JavaSparkContext sc = new JavaSparkContext(conf);
 
         MpBoostLearner learner = new MpBoostLearner(sc);
         learner.setNumIterations(numIterations);
+        learner.setParallelismDegree(parallelismDegree);
         MPBoostClassifier classifier = learner.buildModel(inputFile);
         DataUtils.saveModel(classifier, outputFile);
+        long endTime = System.currentTimeMillis();
+        System.out.println("Execution time: "+(endTime-startTime)+" milliseconds.");
     }
 }

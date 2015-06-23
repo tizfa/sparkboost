@@ -29,7 +29,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 
 /**
- * A Spark implementation of MP-Boost learner, a variant of the
+ * A Spark implementation of MP-Boost algorithm, an improved variant of the
  * well known AdaBoost.MH boosting algorithm.<br/><br/>
  * The original article describing the algorithm can be found at
  * http://link.springer.com/chapter/10.1007/11880561_1
@@ -60,7 +60,7 @@ public class MpBoostLearner {
         }
     }
 
-    private static class WeakHypothesisResults {
+    private static class WeakHypothesisResults implements Serializable {
         private final int[] pivot;
         private final double[] c0;
         private final double[] c1;
@@ -98,20 +98,31 @@ public class MpBoostLearner {
 
     private final JavaSparkContext sc;
 
+    private int parallelismDegree;
+
     public MpBoostLearner(JavaSparkContext sc) {
         if (sc == null)
             throw new NullPointerException("The SparkContext is 'null'");
         this.sc = sc;
+        this.parallelismDegree = 8;
+        this.numIterations = 200;
+    }
+
+    public int getParallelismDegree() {
+        return parallelismDegree;
+    }
+
+    public void setParallelismDegree(int parallelismDegree) {
+        this.parallelismDegree = parallelismDegree;
     }
 
     public MPBoostClassifier buildModel(String libSvmFile) {
         System.out.println("Load initial data and generating all necessary internal data representations...");
-        JavaRDD<MultilabelPoint> docs = DataUtils.loadLibSvmFileFormatData(sc, libSvmFile).persist(StorageLevel.MEMORY_AND_DISK());
+        JavaRDD<MultilabelPoint> docs = DataUtils.loadLibSvmFileFormatData(sc, libSvmFile).repartition(getParallelismDegree()).persist(StorageLevel.MEMORY_ONLY_SER());
         int numDocs = DataUtils.getNumDocuments(docs);
-        int numFeats = DataUtils.getNumFeatures(docs);
         int numLabels = DataUtils.getNumLabels(docs);
-        JavaRDD<DataUtils.LabelDocuments> labelDocuments = DataUtils.getLabelDocuments(docs).persist(StorageLevel.MEMORY_AND_DISK());
-        JavaRDD<DataUtils.FeatureDocuments> featureDocuments = DataUtils.getFeatureDocuments(docs).persist(StorageLevel.MEMORY_AND_DISK());
+        JavaRDD<DataUtils.LabelDocuments> labelDocuments = DataUtils.getLabelDocuments(docs).repartition(getParallelismDegree()).persist(StorageLevel.MEMORY_ONLY_SER());
+        JavaRDD<DataUtils.FeatureDocuments> featureDocuments = DataUtils.getFeatureDocuments(docs).repartition(getParallelismDegree()).persist(StorageLevel.MEMORY_ONLY_SER());
         System.out.println("Ok, done!");
 
         WeakHypothesis[] computedWH = new WeakHypothesis[numIterations];
@@ -138,7 +149,7 @@ public class MpBoostLearner {
 
         System.out.println("Model built!");
 
-        return null;
+        return new MPBoostClassifier(computedWH);
     }
 
 
@@ -238,8 +249,10 @@ public class MpBoostLearner {
         while (itlabels.hasNext()){
             DataUtils.LabelDocuments la = itlabels.next();
             int labelID = la.getLabelID();
+            assert(labelID != -1);
             for (int idx = 0; idx < la.getDocuments().length; idx++) {
                 int docID = la.getDocuments()[idx];
+                assert(docID != -1);
                 double distValue = localDM[labelID][docID];
                 local_weight_b1[labelID] += distValue;
             }
@@ -269,17 +282,17 @@ public class MpBoostLearner {
             double[][] dm = distDM.getValue();
             double epsilon = 1.0 / (double) (dm.length * dm[0].length);
             int numLabels = dm.length;
-            double[] weight_b1_x0 = new double[labelsSize];
-            double[] weight_b1_x1 = new double[labelsSize];
-            double[] weight_bminus_1_x0 = new double[labelsSize];
-            double[] weight_bminus_1_x1 = new double[labelsSize];
-            double[] computedC0 = new double[labelsSize];
-            double[] computedC1 = new double[labelsSize];
-            double[] computedZs = new double[labelsSize];
-            int[] pivot = new int[labelsSize];
+            double[] weight_b1_x0 = new double[numLabels];
+            double[] weight_b1_x1 = new double[numLabels];
+            double[] weight_bminus_1_x0 = new double[numLabels];
+            double[] weight_bminus_1_x1 = new double[numLabels];
+            double[] computedC0 = new double[numLabels];
+            double[] computedC1 = new double[numLabels];
+            double[] computedZs = new double[numLabels];
+            int[] pivot = new int[numLabels];
             int realFeatID = feat.getFeatureID();
             // Initialize structures.
-            for (int pos = 0; pos < labelsSize; pos++) {
+            for (int pos = 0; pos < numLabels; pos++) {
                 weight_b1_x0[pos] = 0;
                 weight_b1_x1[pos] = 0;
                 weight_bminus_1_x0[pos] = 0;
@@ -290,7 +303,7 @@ public class MpBoostLearner {
 
             for (int docIdx = 0; docIdx < feat.getDocuments().length; docIdx++) {
                 int docID = feat.getDocuments()[docIdx];
-                int[] labels = feat.getLabels()[docID];
+                int[] labels = feat.getLabels()[docIdx];
                 HashMap<Integer, Integer> catDict = new HashMap<Integer, Integer>();
                 for (int labelIdx = 0; labelIdx < labels.length; labelIdx++) {
                     int currentCatID = labels[labelIdx];
@@ -309,7 +322,7 @@ public class MpBoostLearner {
             }
 
             // Compute the remaining values.
-            for (int catID = 0; catID < labelsSize; catID++) {
+            for (int catID = 0; catID < numLabels; catID++) {
                 double v = weight_b1.getValue()[catID] - weight_b1_x1[catID];
                 if (v < 0)
                     v = 0;
@@ -324,7 +337,7 @@ public class MpBoostLearner {
             }
 
             // Compute current Z_s.
-            for (int catID = 0; catID < labelsSize; catID++) {
+            for (int catID = 0; catID < numLabels; catID++) {
                 assert (weight_b1_x0[catID] >= 0);
                 assert (weight_bminus_1_x0[catID] >= 0);
                 assert (weight_b1_x1[catID] >= 0);
