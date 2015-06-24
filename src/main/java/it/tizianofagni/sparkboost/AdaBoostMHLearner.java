@@ -29,10 +29,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 
 /**
- * A Spark implementation of MP-Boost algorithm, an improved variant of the
- * well known AdaBoost.MH boosting algorithm.<br/><br/>
- * The original article describing the algorithm can be found at
- * http://link.springer.com/chapter/10.1007/11880561_1
+ * A Spark implementation of AdaBoost.MH learner.
  *
  * @author Tiziano Fagni (tiziano.fagni@isti.cnr.it)
  */
