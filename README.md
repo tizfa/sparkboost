@@ -5,7 +5,7 @@ The software is open source and released under the terms of the Apache License, 
 
 The software allows to build MP-Boost multi-label multiclass classifiers starting from dataset files available in the [LibSvm](http://www.csie.ntu.edu.tw/~cjlin/libsvm/) format. A lot of ready datasets in this format are available [here](http://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/). 
 
-IMPORTANT NOTE: currently the software only works with multiclass datasets containing categories IDs assigned in a 0-based way, i.e. if the dataset contains 10 labels, the set of valid IDs must be in the range [0, 9] included.
+IMPORTANT NOTE: currently the software only works with multiclass datasets containing categories IDs assigned in a 0-based way, i.e. if the dataset contains 10 labels, the set of valid label IDs must be in the range [0, 9] included.
 
 ## Software compilation
 To build the software you need to have [Maven](https://maven.apache.org/) and a Java 8 compiler installed on your machine. Download a copy of this software repository on your machine on a specific folder, go inside that forlder and at the command prompt put the following commands:
