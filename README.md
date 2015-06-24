@@ -1,7 +1,7 @@
 # sparkboost
 This repository contains a distributed implementation based on [Apache Spark](https://spark.apache.org/) of [AdaBoost.MH](http://link.springer.com/article/10.1023%2FA%3A1007649029923) and [MP-Boost](http://link.springer.com/chapter/10.1007%2F11880561_1#page-1) algorithms. MP-Boost is an improved variant of the well known AdaBoost.MH machine learning algorithm. MP-Boost improves original AdaBoost.MH by building classifiers which allows to obtain remarkably better effectiveness and a very similar computational cost at build/classification time.
 
-The software is open source and released under the terms of the Apache License, Version 2.0
+The software is open source and released under the terms of the [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0).
 
 The software allows to build MP-Boost multi-label multiclass classifiers starting from dataset files available in the [LibSvm](http://www.csie.ntu.edu.tw/~cjlin/libsvm/) format. A lot of ready datasets in this format are available [here](http://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/). 
 
