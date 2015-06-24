@@ -1,5 +1,5 @@
 # sparkboost
-This repository contains a distributed [MP-Boost](http://link.springer.com/chapter/10.1007%2F11880561_1#page-1) implementation based on [Apache Spark](https://spark.apache.org/). MP-Boost is an improved variant of the well known [AdaBoost.MH](http://link.springer.com/article/10.1023%2FA%3A1007649029923) machine learning algorithm. MP-Boost improves original AdaBoost.MH by building classifiers which allows to obtain remarkably better effectiveness and a very similar computational cost at build/classification time.
+This repository contains a distributed implementation based on [Apache Spark](https://spark.apache.org/) of [AdaBoost.MH](http://link.springer.com/article/10.1023%2FA%3A1007649029923) and [MP-Boost](http://link.springer.com/chapter/10.1007%2F11880561_1#page-1) algoritms. MP-Boost is an improved variant of the well known AdaBoost.MH machine learning algorithm. MP-Boost improves original AdaBoost.MH by building classifiers which allows to obtain remarkably better effectiveness and a very similar computational cost at build/classification time.
 
 The software is open source and released under the terms of the Apache License, Version 2.0
 
@@ -16,17 +16,24 @@ mvn -P release package
 This set of commands will build a software bundle containing all the necessary Spark libraries. You can find the software bundle in the `target` directory of the software package.
 
 ## Software usage
-### Building a classifier
-To build a classifier for a specific dataset file `path/to/datasetFile` (in the format libsvm), launch this command from prompt:
+### Building a MP-Boost classifier
+To build a MP-Boost classifier for a specific dataset file `path/to/datasetFile` (in the format libsvm), launch this command from prompt:
 ```
 java -cp ./target/sparkboost-0.1-SNAPSHOT-bundle.jar it.tizianofagni.sparkboost.MPBoostLearnerExe path/to/datasetfile path/to/modelOutput numIterations sparkMasterName parallelismDegree
 ```
 where `path/to/modelOutput` is the output file where the generated classifier will be save, `numIterations` is the number of iterations used in the algorithm, `sparkMasterName` is the name of Spark master host (or local[*] for executing the process locally on your machine) and `parallelismDegree` is the number of processing units to use while executing the algorithm.
 
-### Using a classifier
-To use an already built classifier over a test dataset, use this command:
+### Building an AdaBoost.MH classifier
+To build a AdaBoost.MH classifier for a specific dataset file `path/to/datasetFile` (in the format libsvm), launch this command from prompt:
 ```
-java -cp ./target/sparkboost-0.1-SNAPSHOT-bundle.jar it.tizianofagni.sparkboost.MPBoostClassifierExe datasetfile classifierModel outputResultsFile sparkMasterName parallelismDegree
+java -cp ./target/sparkboost-0.1-SNAPSHOT-bundle.jar it.tizianofagni.sparkboost.AdaBoostMHLearnerExe path/to/datasetfile path/to/modelOutput numIterations sparkMasterName parallelismDegree
+```
+where `path/to/modelOutput` is the output file where the generated classifier will be save, `numIterations` is the number of iterations used in the algorithm, `sparkMasterName` is the name of Spark master host (or local[*] for executing the process locally on your machine) and `parallelismDegree` is the number of processing units to use while executing the algorithm.
+
+### Using a classifier
+To use an already built classifier over a test dataset (it does not matter if the model has been built with MP-Boost or AdaBoost.MH learner, they share the same forrmat for classification models!), use this command:
+```
+java -cp ./target/sparkboost-0.1-SNAPSHOT-bundle.jar it.tizianofagni.sparkboost.BoostClassifierExe datasetfile classifierModel outputResultsFile sparkMasterName parallelismDegree
 ```
 where `datasetFile` is the input file containing the dataset test examples, `classifierModel` is the file containing a previous generated classifier, `outputResultsFile` is the ouput file containing classification results, `sparkMasterName` is the name of Spark master host (or local[*] for executing the process locally on your machine) and `parallelismDegree` is the number of processing units to use while executing the algorithm.
 
