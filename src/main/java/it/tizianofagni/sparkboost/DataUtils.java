@@ -257,7 +257,7 @@ public class DataUtils {
         }).map(item -> item._2());
     }
 
-    public static void saveModel(MPBoostClassifier classifier, String outputFile) {
+    public static void saveModel(BoostClassifier classifier, String outputFile) {
         if (classifier == null)
             throw new NullPointerException("The classifier is 'null'");
         if (outputFile == null)
@@ -282,14 +282,14 @@ public class DataUtils {
         }
     }
 
-    public static MPBoostClassifier loadModel(String inputFile) {
+    public static BoostClassifier loadModel(String inputFile) {
         if (inputFile == null)
             throw new NullPointerException("The output file is 'null'");
         ObjectInputStream ois = null;
         try {
             InputStream fis = new BufferedInputStream(new FileInputStream(inputFile));
             ois = new ObjectInputStream(fis);
-            return (MPBoostClassifier) ois.readObject();
+            return (BoostClassifier) ois.readObject();
         } catch (Exception e) {
             throw new RuntimeException("Reading classifier model", e);
         } finally {

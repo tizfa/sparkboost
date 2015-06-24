@@ -25,10 +25,10 @@ import org.apache.spark.api.java.JavaSparkContext;
 /**
  * @author Tiziano Fagni (tiziano.fagni@isti.cnr.it)
  */
-public class MPBoostLearnerExe {
+public class AdaBoostMHLearnerExe {
     public static void main(String[] args) {
         if (args.length != 5) {
-            System.out.println("Usage: " + MPBoostLearnerExe.class.getName() + " <inputFile> <outputFile> <numIterations> <sparkMaster> <parallelismDegree>");
+            System.out.println("Usage: " + AdaBoostMHLearnerExe.class.getName() + " <inputFile> <outputFile> <numIterations> <sparkMaster> <parallelismDegree>");
             System.exit(-1);
         }
 
@@ -46,7 +46,7 @@ public class MPBoostLearnerExe {
         JavaSparkContext sc = new JavaSparkContext(conf);
 
         // Create and configure learner.
-        MpBoostLearner learner = new MpBoostLearner(sc);
+        AdaBoostMHLearner learner = new AdaBoostMHLearner(sc);
         learner.setNumIterations(numIterations);
         learner.setParallelismDegree(parallelismDegree);
 

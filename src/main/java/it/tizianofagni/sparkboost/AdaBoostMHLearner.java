@@ -36,7 +36,7 @@ import java.util.Iterator;
  *
  * @author Tiziano Fagni (tiziano.fagni@isti.cnr.it)
  */
-public class MpBoostLearner {
+public class AdaBoostMHLearner {
 
     private final JavaSparkContext sc;
     /**
@@ -45,7 +45,7 @@ public class MpBoostLearner {
     private int numIterations;
     private int parallelismDegree;
 
-    public MpBoostLearner(JavaSparkContext sc) {
+    public AdaBoostMHLearner(JavaSparkContext sc) {
         if (sc == null)
             throw new NullPointerException("The SparkContext is 'null'");
         this.sc = sc;
@@ -137,20 +137,19 @@ public class MpBoostLearner {
 
         Iterator<DMPartialResult> itResults = partialResults.toLocalIterator();
         // Update partial results.
-
-        double[] normalizations = new double[localDM.length];
+        double normalization = 0;
         while (itResults.hasNext()) {
             DMPartialResult r = itResults.next();
             for (int labelID = 0; labelID < localDM.length; labelID++) {
                 localDM[labelID][r.docID] = r.labelsRes[labelID];
-                normalizations[labelID] += localDM[labelID][r.docID];
+                normalization += localDM[labelID][r.docID];
             }
         }
 
-        // Normalize all values per label.
+        // Normalize all values.
         for (int labelID = 0; labelID < localDM.length; labelID++) {
             for (int docID = 0; docID < localDM[0].length; docID++) {
-                localDM[labelID][docID] = localDM[labelID][docID] / normalizations[labelID];
+                localDM[labelID][docID] = localDM[labelID][docID] / normalization;
             }
         }
     }
@@ -229,15 +228,14 @@ public class MpBoostLearner {
             double[] computedC0 = new double[numLabels];
             double[] computedC1 = new double[numLabels];
             double[] computedZs = new double[numLabels];
-            int[] pivot = new int[numLabels];
             int realFeatID = feat.getFeatureID();
+            int pivot = realFeatID;
             // Initialize structures.
             for (int pos = 0; pos < numLabels; pos++) {
                 weight_b1_x0[pos] = 0;
                 weight_b1_x1[pos] = 0;
                 weight_bminus_1_x0[pos] = 0;
                 weight_bminus_1_x1[pos] = 0;
-                pivot[pos] = realFeatID;
             }
 
 
@@ -277,53 +275,55 @@ public class MpBoostLearner {
             }
 
             // Compute current Z_s.
+            double Z_s = 0;
             for (int catID = 0; catID < numLabels; catID++) {
                 assert (weight_b1_x0[catID] >= 0);
                 assert (weight_bminus_1_x0[catID] >= 0);
                 assert (weight_b1_x1[catID] >= 0);
                 assert (weight_bminus_1_x1[catID] >= 0);
 
-                double Z_s = 0;
                 double first = Math.sqrt(weight_b1_x0[catID]
                         * weight_bminus_1_x0[catID]);
                 double second = Math.sqrt(weight_b1_x1[catID]
                         * weight_bminus_1_x1[catID]);
-                Z_s = (first + second);
-                Z_s = 2 * Z_s;
+                Z_s += (first + second);
                 double c0 = Math.log((weight_b1_x0[catID] + epsilon)
                         / (weight_bminus_1_x0[catID] + epsilon)) / 2.0;
                 double c1 = Math.log((weight_b1_x1[catID] + epsilon)
                         / (weight_bminus_1_x1[catID] + epsilon)) / 2.0;
                 computedC0[catID] = c0;
                 computedC1[catID] = c1;
-                computedZs[catID] = Z_s;
             }
+            Z_s = 2 * Z_s;
 
-            return new WeakHypothesisResults(pivot, computedC0, computedC1, computedZs);
+            return new WeakHypothesisResults(pivot, computedC0, computedC1, Z_s);
         }).reduce((ph1, ph2) -> {
-            int[] pivot = new int[ph1.getPivot().length];
-            double[] c0 = new double[ph1.getPivot().length];
-            double[] c1 = new double[ph1.getPivot().length];
-            double[] z_s = new double[ph1.getPivot().length];
-            for (int i = 0; i < ph1.getPivot().length; i++) {
-                if (ph1.getZ_s()[i] < ph2.getZ_s()[i]) {
-                    pivot[i] = ph1.getPivot()[i];
+            int pivot = -1;
+            double[] c0 = new double[ph1.getC0().length];
+            double[] c1 = new double[ph1.getC0().length];
+            double z_s = 0;
+            if (ph1.getZ_s() < ph2.getZ_s()) {
+                pivot = ph1.pivot;
+                z_s = ph1.getZ_s();
+                for (int i = 0; i < ph1.getC0().length; i++) {
                     c0[i] = ph1.getC0()[i];
                     c1[i] = ph1.getC1()[i];
-                    z_s[i] = ph1.getZ_s()[i];
-                } else {
-                    pivot[i] = ph2.getPivot()[i];
+                }
+            } else {
+                pivot = ph2.pivot;
+                z_s = ph2.getZ_s();
+                for (int i = 0; i < ph2.getC0().length; i++) {
                     c0[i] = ph2.getC0()[i];
                     c1[i] = ph2.getC1()[i];
-                    z_s[i] = ph2.getZ_s()[i];
                 }
             }
+
             return new WeakHypothesisResults(pivot, c0, c1, z_s);
         });
 
         WeakHypothesis wh = new WeakHypothesis(labelsSize);
         for (int i = 0; i < labelsSize; i++) {
-            wh.setLabelData(i, new WeakHypothesis.WeakHypothesisData(i, res.getPivot()[i], res.getC0()[i], res.getC1()[i]));
+            wh.setLabelData(i, new WeakHypothesis.WeakHypothesisData(i, res.getPivot(), res.getC0()[i], res.getC1()[i]));
         }
         return wh;
     }
@@ -359,19 +359,19 @@ public class MpBoostLearner {
     }
 
     private static class WeakHypothesisResults implements Serializable {
-        private final int[] pivot;
+        private final int pivot;
         private final double[] c0;
         private final double[] c1;
-        private final double[] z_s;
+        private final double z_s;
 
-        public WeakHypothesisResults(int[] pivot, double[] c0, double[] c1, double[] z_s) {
+        public WeakHypothesisResults(int pivot, double[] c0, double[] c1, double z_s) {
             this.pivot = pivot;
             this.c0 = c0;
             this.c1 = c1;
             this.z_s = z_s;
         }
 
-        public int[] getPivot() {
+        public int getPivot() {
             return pivot;
         }
 
@@ -383,7 +383,7 @@ public class MpBoostLearner {
             return c1;
         }
 
-        public double[] getZ_s() {
+        public double getZ_s() {
             return z_s;
         }
     }

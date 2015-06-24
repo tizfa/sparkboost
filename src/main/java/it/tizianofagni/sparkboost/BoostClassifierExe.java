@@ -29,10 +29,10 @@ import java.util.Arrays;
 /**
  * @author Tiziano Fagni (tiziano.fagni@isti.cnr.it)
  */
-public class MPBoostClassifierExe {
+public class BoostClassifierExe {
     public static void main(String[] args) {
         if (args.length != 5) {
-            System.out.println("Usage: " + MPBoostClassifierExe.class.getName() + " <inputFile> <inputModel> <outputFile> <sparkMaster> <parallelismDegree>");
+            System.out.println("Usage: " + BoostClassifierExe.class.getName() + " <inputFile> <inputModel> <outputFile> <sparkMaster> <parallelismDegree>");
             System.exit(-1);
         }
 
@@ -49,7 +49,7 @@ public class MPBoostClassifierExe {
         JavaSparkContext sc = new JavaSparkContext(conf);
 
         // Load MPBoost classifier from disk.
-        MPBoostClassifier classifier = DataUtils.loadModel(inputModel);
+        BoostClassifier classifier = DataUtils.loadModel(inputModel);
 
         // Classify documents contained in "inputFile", a file in libsvm format.
         ClassificationResults results = classifier.classify(sc, inputFile, parallelismDegree);
