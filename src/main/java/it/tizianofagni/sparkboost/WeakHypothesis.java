@@ -25,7 +25,34 @@ import java.io.Serializable;
  * @author Tiziano Fagni (tiziano.fagni@isti.cnr.it)
  */
 public class WeakHypothesis implements Serializable {
-    public static class WeakHypothesisData implements Serializable{
+    private final WeakHypothesisData[] labelsHypothesis;
+
+
+    public WeakHypothesis(int numLabels) {
+        labelsHypothesis = new WeakHypothesisData[numLabels];
+    }
+
+    public void setLabelData(int labelID, WeakHypothesisData whd) {
+        if (labelID < 0 || labelID >= labelsHypothesis.length)
+            throw new IllegalArgumentException("The label ID is not valid: " + labelID);
+        if (whd == null)
+            throw new NullPointerException("The weak hypothesis data is 'nuyll'");
+        if (labelID != whd.getLabelID())
+            throw new IllegalArgumentException("The label ID specified in weak hypothesis data is different!");
+        labelsHypothesis[labelID] = whd;
+    }
+
+    public WeakHypothesisData getLabelData(int labelID) {
+        if (labelID < 0 || labelID >= labelsHypothesis.length)
+            throw new IllegalArgumentException("The label ID is not valid: " + labelID);
+        return labelsHypothesis[labelID];
+    }
+
+    public int getNumLabels() {
+        return labelsHypothesis.length;
+    }
+
+    public static class WeakHypothesisData implements Serializable {
 
         /**
          * The label ID.
@@ -69,33 +96,5 @@ public class WeakHypothesis implements Serializable {
         public double getC1() {
             return c1;
         }
-    }
-
-
-    private final WeakHypothesisData[] labelsHypothesis;
-
-    public WeakHypothesis(int numLabels) {
-        labelsHypothesis = new WeakHypothesisData[numLabels];
-    }
-
-    public void setLabelData(int labelID, WeakHypothesisData whd) {
-        if (labelID < 0 || labelID >= labelsHypothesis.length)
-            throw new IllegalArgumentException("The label ID is not valid: "+labelID);
-        if (whd == null)
-            throw new NullPointerException("The weak hypothesis data is 'nuyll'");
-        if (labelID != whd.getLabelID())
-            throw new IllegalArgumentException("The label ID specified in weak hypothesis data is different!");
-        labelsHypothesis[labelID] = whd;
-    }
-
-
-    public WeakHypothesisData getLabelData(int labelID) {
-        if (labelID < 0 || labelID >= labelsHypothesis.length)
-            throw new IllegalArgumentException("The label ID is not valid: "+labelID);
-        return labelsHypothesis[labelID];
-    }
-
-    public int getNumLabels() {
-        return labelsHypothesis.length;
     }
 }

@@ -38,66 +38,11 @@ import java.util.Iterator;
  */
 public class MpBoostLearner {
 
-    static class DMPartialResult implements Serializable {
-        private final int docID;
-        private double[] labelsRes;
-
-        DMPartialResult(int docID, double[] labelsRes) {
-            this.docID = docID;
-            this.labelsRes = labelsRes;
-        }
-
-        public int getDocID() {
-            return docID;
-        }
-
-        public double[] getLabelsRes() {
-            return labelsRes;
-        }
-
-        public void setLabelsRes(double[] labelsRes) {
-            this.labelsRes = labelsRes;
-        }
-    }
-
-    private static class WeakHypothesisResults implements Serializable {
-        private final int[] pivot;
-        private final double[] c0;
-        private final double[] c1;
-        private final double[] z_s;
-
-        public WeakHypothesisResults(int[] pivot, double[] c0, double[] c1, double[] z_s) {
-            this.pivot = pivot;
-            this.c0 = c0;
-            this.c1 = c1;
-            this.z_s = z_s;
-        }
-
-        public int[] getPivot() {
-            return pivot;
-        }
-
-        public double[] getC0() {
-            return c0;
-        }
-
-        public double[] getC1() {
-            return c1;
-        }
-
-        public double[] getZ_s() {
-            return z_s;
-        }
-    }
-
-
+    private final JavaSparkContext sc;
     /**
      * The number of iterations.
      */
     private int numIterations;
-
-    private final JavaSparkContext sc;
-
     private int parallelismDegree;
 
     public MpBoostLearner(JavaSparkContext sc) {
@@ -152,7 +97,6 @@ public class MpBoostLearner {
         return new MPBoostClassifier(computedWH);
     }
 
-
     protected void updateDistributionMatrix(JavaSparkContext sc, JavaRDD<MultilabelPoint> docs, double[][] localDM, WeakHypothesis localWH) {
         Broadcast<WeakHypothesis> distWH = sc.broadcast(localWH);
         Broadcast<double[][]> distDM = sc.broadcast(localDM);
@@ -201,7 +145,7 @@ public class MpBoostLearner {
         }
 
         // Normalize all values per label.
-        for (int labelID = 0; labelID < localDM.length; labelID++){
+        for (int labelID = 0; labelID < localDM.length; labelID++) {
             double normalization = 0;
             for (int docID = 0; docID < localDM[0].length; docID++) {
                 normalization += localDM[labelID][docID];
@@ -211,7 +155,6 @@ public class MpBoostLearner {
             }
         }
     }
-
 
     protected double[][] initDistributionMatrix(int numLabels, int numDocs) {
         double[][] dist = new double[numLabels][numDocs];
@@ -225,8 +168,6 @@ public class MpBoostLearner {
         }
         return dist;
     }
-
-
 
     protected WeakHypothesis learnWeakHypothesis(double[][] localDM, JavaRDD<DataUtils.LabelDocuments> labelDocuments, JavaRDD<DataUtils.FeatureDocuments> featureDocuments) {
         int labelsSize = localDM.length;
@@ -246,13 +187,13 @@ public class MpBoostLearner {
         }
 
         Iterator<DataUtils.LabelDocuments> itlabels = labelDocuments.toLocalIterator();
-        while (itlabels.hasNext()){
+        while (itlabels.hasNext()) {
             DataUtils.LabelDocuments la = itlabels.next();
             int labelID = la.getLabelID();
-            assert(labelID != -1);
+            assert (labelID != -1);
             for (int idx = 0; idx < la.getDocuments().length; idx++) {
                 int docID = la.getDocuments()[idx];
-                assert(docID != -1);
+                assert (docID != -1);
                 double distValue = localDM[labelID][docID];
                 local_weight_b1[labelID] += distValue;
             }
@@ -360,7 +301,7 @@ public class MpBoostLearner {
             }
 
             return new WeakHypothesisResults(pivot, computedC0, computedC1, computedZs);
-        }).reduce((ph1, ph2)->{
+        }).reduce((ph1, ph2) -> {
             int[] pivot = new int[ph1.getPivot().length];
             double[] c0 = new double[ph1.getPivot().length];
             double[] c1 = new double[ph1.getPivot().length];
@@ -378,7 +319,7 @@ public class MpBoostLearner {
                     z_s[i] = ph2.getZ_s()[i];
                 }
             }
-            return new WeakHypothesisResults(pivot,c0, c1, z_s);
+            return new WeakHypothesisResults(pivot, c0, c1, z_s);
         });
 
         WeakHypothesis wh = new WeakHypothesis(labelsSize);
@@ -394,5 +335,57 @@ public class MpBoostLearner {
 
     public void setNumIterations(int numIterations) {
         this.numIterations = numIterations;
+    }
+
+    static class DMPartialResult implements Serializable {
+        private final int docID;
+        private double[] labelsRes;
+
+        DMPartialResult(int docID, double[] labelsRes) {
+            this.docID = docID;
+            this.labelsRes = labelsRes;
+        }
+
+        public int getDocID() {
+            return docID;
+        }
+
+        public double[] getLabelsRes() {
+            return labelsRes;
+        }
+
+        public void setLabelsRes(double[] labelsRes) {
+            this.labelsRes = labelsRes;
+        }
+    }
+
+    private static class WeakHypothesisResults implements Serializable {
+        private final int[] pivot;
+        private final double[] c0;
+        private final double[] c1;
+        private final double[] z_s;
+
+        public WeakHypothesisResults(int[] pivot, double[] c0, double[] c1, double[] z_s) {
+            this.pivot = pivot;
+            this.c0 = c0;
+            this.c1 = c1;
+            this.z_s = z_s;
+        }
+
+        public int[] getPivot() {
+            return pivot;
+        }
+
+        public double[] getC0() {
+            return c0;
+        }
+
+        public double[] getC1() {
+            return c1;
+        }
+
+        public double[] getZ_s() {
+            return z_s;
+        }
     }
 }

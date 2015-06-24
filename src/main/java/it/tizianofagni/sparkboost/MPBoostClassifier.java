@@ -25,74 +25,11 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 
 /**
  * @author Tiziano Fagni (tiziano.fagni@isti.cnr.it)
  */
 public class MPBoostClassifier implements Serializable {
-
-    private class PreliminaryDocumentClassification implements Serializable {
-        private final int documentID;
-        private final int[] goldLabels;
-        private final double[] scores;
-
-
-        public PreliminaryDocumentClassification(int documentID, int[] goldLabels, double[] scores) {
-            this.documentID = documentID;
-            this.goldLabels = goldLabels;
-            this.scores = scores;
-        }
-
-        public int getDocumentID() {
-            return documentID;
-        }
-
-        public double[] getScores() {
-            return scores;
-        }
-
-        public int[] getGoldLabels() {
-            return goldLabels;
-        }
-    }
-
-    private class FinalDocumentClassification implements Serializable{
-        private final int documentID;
-        private final int[] labelsAssigned;
-        private final double[] scoresAssigned;
-        private final int[] goldLabels;
-        private final ContingencyTable ct;
-
-        public FinalDocumentClassification(int documentID, int[] labelsAssigned, double[] scoresAssigned, int[] goldLabels, ContingencyTable ct) {
-            this.documentID = documentID;
-            this.labelsAssigned = labelsAssigned;
-            this.scoresAssigned = scoresAssigned;
-            this.goldLabels = goldLabels;
-            this.ct = ct;
-        }
-
-        public int getDocumentID() {
-            return documentID;
-        }
-
-        public int[] getLabelsAssigned() {
-            return labelsAssigned;
-        }
-
-        public double[] getScoresAssigned() {
-            return scoresAssigned;
-        }
-
-        public int[] getGoldLabels() {
-            return goldLabels;
-        }
-
-        public ContingencyTable getCt() {
-            return ct;
-        }
-    }
-
 
     private final WeakHypothesis[] whs;
 
@@ -101,7 +38,6 @@ public class MPBoostClassifier implements Serializable {
             throw new NullPointerException("The set of generated WHs is 'null'");
         this.whs = whs;
     }
-
 
     ClassificationResults classify(JavaSparkContext sc, String libSvmFile, int parallelismDegree) {
         if (sc == null)
@@ -164,9 +100,9 @@ public class MPBoostClassifier implements Serializable {
             }
             ContingencyTable ct = new ContingencyTable(tp, tn, fp, fn);
             int[][] labelsRet = new int[1][];
-            labelsRet[0] = labelAssigned.stream().mapToInt(i->i).toArray();
+            labelsRet[0] = labelAssigned.stream().mapToInt(i -> i).toArray();
             double[][] scoresRet = new double[1][];
-            scoresRet[0] = labelScores.stream().mapToDouble(i->i).toArray();
+            scoresRet[0] = labelScores.stream().mapToDouble(i -> i).toArray();
             int[][] goldLabelsRet = new int[1][];
             goldLabelsRet[0] = dc.getGoldLabels();
             int[] documents = new int[]{docID};
@@ -174,44 +110,105 @@ public class MPBoostClassifier implements Serializable {
             return new ClassificationResults(1, documents, labelsRet, scoresRet, goldLabelsRet, ct);
 
 
-        }).reduce((cl1, cl2)->{
-            int numDocuments = cl1.getNumDocs()+cl2.getNumDocs();
-            ContingencyTable ct = new ContingencyTable(cl1.getCt().tp()+cl2.getCt().tp(),
-                    cl1.getCt().tn()+cl2.getCt().tn(), cl1.getCt().fp()+cl2.getCt().fp(),
-                    cl1.getCt().fn()+cl2.getCt().fn());
+        }).reduce((cl1, cl2) -> {
+            int numDocuments = cl1.getNumDocs() + cl2.getNumDocs();
+            ContingencyTable ct = new ContingencyTable(cl1.getCt().tp() + cl2.getCt().tp(),
+                    cl1.getCt().tn() + cl2.getCt().tn(), cl1.getCt().fp() + cl2.getCt().fp(),
+                    cl1.getCt().fn() + cl2.getCt().fn());
             int[] documents = new int[numDocuments];
 
             // Copy document IDs.
             for (int i = 0; i < cl1.getNumDocs(); i++)
                 documents[i] = cl1.getDocuments()[i];
-            for (int i = cl1.getNumDocs(); i < numDocuments;i++)
-                documents[i] = cl2.getDocuments()[i-cl1.getNumDocs()];
+            for (int i = cl1.getNumDocs(); i < numDocuments; i++)
+                documents[i] = cl2.getDocuments()[i - cl1.getNumDocs()];
 
             // Copy label IDs.
             int[][] labels = new int[numDocuments][];
             for (int i = 0; i < cl1.getNumDocs(); i++)
                 labels[i] = cl1.getLabels()[i];
-            for (int i = cl1.getNumDocs(); i < numDocuments;i++)
-                labels[i] = cl2.getLabels()[i-cl1.getNumDocs()];
+            for (int i = cl1.getNumDocs(); i < numDocuments; i++)
+                labels[i] = cl2.getLabels()[i - cl1.getNumDocs()];
 
             // Copy score IDs.
             double[][] scores = new double[numDocuments][];
             for (int i = 0; i < cl1.getNumDocs(); i++)
                 scores[i] = cl1.getScores()[i];
-            for (int i = cl1.getNumDocs(); i < numDocuments;i++)
-                scores[i] = cl2.getScores()[i-cl1.getNumDocs()];
+            for (int i = cl1.getNumDocs(); i < numDocuments; i++)
+                scores[i] = cl2.getScores()[i - cl1.getNumDocs()];
 
             // Copy gold label IDs.
             int[][] goldLabels = new int[numDocuments][];
             for (int i = 0; i < cl1.getNumDocs(); i++)
                 goldLabels[i] = cl1.getGoldLabels()[i];
-            for (int i = cl1.getNumDocs(); i < numDocuments;i++)
-                goldLabels[i] = cl2.getGoldLabels()[i-cl1.getNumDocs()];
+            for (int i = cl1.getNumDocs(); i < numDocuments; i++)
+                goldLabels[i] = cl2.getGoldLabels()[i - cl1.getNumDocs()];
 
             return new ClassificationResults(numDocuments, documents, labels, scores, goldLabels, ct);
         });
 
         System.out.println("done.");
         return classifications;
+    }
+
+    private class PreliminaryDocumentClassification implements Serializable {
+        private final int documentID;
+        private final int[] goldLabels;
+        private final double[] scores;
+
+
+        public PreliminaryDocumentClassification(int documentID, int[] goldLabels, double[] scores) {
+            this.documentID = documentID;
+            this.goldLabels = goldLabels;
+            this.scores = scores;
+        }
+
+        public int getDocumentID() {
+            return documentID;
+        }
+
+        public double[] getScores() {
+            return scores;
+        }
+
+        public int[] getGoldLabels() {
+            return goldLabels;
+        }
+    }
+
+    private class FinalDocumentClassification implements Serializable {
+        private final int documentID;
+        private final int[] labelsAssigned;
+        private final double[] scoresAssigned;
+        private final int[] goldLabels;
+        private final ContingencyTable ct;
+
+        public FinalDocumentClassification(int documentID, int[] labelsAssigned, double[] scoresAssigned, int[] goldLabels, ContingencyTable ct) {
+            this.documentID = documentID;
+            this.labelsAssigned = labelsAssigned;
+            this.scoresAssigned = scoresAssigned;
+            this.goldLabels = goldLabels;
+            this.ct = ct;
+        }
+
+        public int getDocumentID() {
+            return documentID;
+        }
+
+        public int[] getLabelsAssigned() {
+            return labelsAssigned;
+        }
+
+        public double[] getScoresAssigned() {
+            return scoresAssigned;
+        }
+
+        public int[] getGoldLabels() {
+            return goldLabels;
+        }
+
+        public ContingencyTable getCt() {
+            return ct;
+        }
     }
 }

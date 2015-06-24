@@ -37,7 +37,6 @@ public class ContingencyTable implements Serializable {
     }
 
 
-
     public int tp() {
         return tp;
     }
@@ -125,7 +124,6 @@ public class ContingencyTable implements Serializable {
     }
 
 
-
     public double specificity() {
         double den = tn() + fp();
         if (den != 0)
@@ -145,8 +143,8 @@ public class ContingencyTable implements Serializable {
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder("TP: "+tp()+", TN: "+tn()+", FP: "+fp()+", FN: "+fn()+"\n");
-        sb.append("Precision: "+precision()+", Recall: "+recall()+", F1:"+f1()+", Accuracy: "+accuracy()+", ROC: "+roc());
+        StringBuilder sb = new StringBuilder("TP: " + tp() + ", TN: " + tn() + ", FP: " + fp() + ", FN: " + fn() + "\n");
+        sb.append("Precision: " + precision() + ", Recall: " + recall() + ", F1:" + f1() + ", Accuracy: " + accuracy() + ", ROC: " + roc());
         return sb.toString();
     }
 }

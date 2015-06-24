@@ -39,50 +39,6 @@ import java.util.List;
  */
 public class DataUtils {
 
-    public static class LabelDocuments implements Serializable {
-        private final int labelID;
-        private final int[] documents;
-
-        public LabelDocuments(int labelID, int[] documents) {
-            this.labelID = labelID;
-            this.documents = documents;
-        }
-
-        public int getLabelID() {
-            return labelID;
-        }
-
-        public int[] getDocuments() {
-            return documents;
-        }
-    }
-
-
-    public static class FeatureDocuments implements Serializable {
-        private final int featureID;
-        private final int[] documents;
-        private final int[][] labels;
-
-        public FeatureDocuments(int featureID, int[] documents, int[][] labels) {
-            this.featureID = featureID;
-            this.documents = documents;
-            this.labels = labels;
-        }
-
-        public int getFeatureID() {
-            return featureID;
-        }
-
-        public int[] getDocuments() {
-            return documents;
-        }
-
-        public int[][] getLabels() {
-            return labels;
-        }
-    }
-
-
     /**
      * Load data file in LibSVm format. The documents IDs are assigned according to the row index in the original
      * file, i.e. useful at classification time. We are assuming that the feature IDs are the same as the training
@@ -128,7 +84,7 @@ public class DataUtils {
                             break;
                         String[] featInfo = data.split(":");
                         // Transform feature ID value in 0-based.
-                        int featID = Integer.parseInt(featInfo[0])-1;
+                        int featID = Integer.parseInt(featInfo[0]) - 1;
                         double value = Double.parseDouble(featInfo[1]);
                         indexes.add(featID);
                         values.add(value);
@@ -150,7 +106,6 @@ public class DataUtils {
         return sc.parallelize(points);
     }
 
-
     /**
      * Load data file in LibSVm format. The documents IDs are assigned arbitrarily by Spark.
      *
@@ -166,7 +121,7 @@ public class DataUtils {
         JavaRDD<String> lines = sc.textFile(dataFile).cache();
         int localNumFeatures = computeNumFeatures(lines);
         Broadcast<Integer> distNumFeatures = sc.broadcast(localNumFeatures);
-        JavaRDD<MultilabelPoint> docs = lines.filter(line->!line.isEmpty()).zipWithIndex().map(item -> {
+        JavaRDD<MultilabelPoint> docs = lines.filter(line -> !line.isEmpty()).zipWithIndex().map(item -> {
             int numFeatures = distNumFeatures.getValue();
             String line = item._1();
             long indexLong = item._2();
@@ -178,7 +133,7 @@ public class DataUtils {
                 String label = t[i];
                 // Labels should be already 0-based.
                 labels[i] = new Double(Double.parseDouble(label)).intValue();
-                assert(labels[i] >= 0);
+                assert (labels[i] >= 0);
             }
             ArrayList<Integer> indexes = new ArrayList<Integer>();
             ArrayList<Double> values = new ArrayList<Double>();
@@ -202,7 +157,6 @@ public class DataUtils {
         return docs;
     }
 
-
     protected static int computeNumFeatures(JavaRDD<String> lines) {
         int maxFeatureID = lines.map(line -> {
             if (line.isEmpty())
@@ -224,7 +178,6 @@ public class DataUtils {
         return maxFeatureID;
     }
 
-
     public static int getNumDocuments(JavaRDD<MultilabelPoint> documents) {
         if (documents == null)
             throw new NullPointerException("The documents RDD is 'null'");
@@ -237,8 +190,8 @@ public class DataUtils {
         int maxValidLabelID = documents.map(doc -> {
             List<Integer> values = Arrays.asList(ArrayUtils.toObject(doc.getLabels()));
             return Collections.max(values);
-        }).reduce((m1,m2)->Math.max(m1,m2));
-        return maxValidLabelID+1;
+        }).reduce((m1, m2) -> Math.max(m1, m2));
+        return maxValidLabelID + 1;
     }
 
     public static int getNumFeatures(JavaRDD<MultilabelPoint> documents) {
@@ -246,8 +199,6 @@ public class DataUtils {
             throw new NullPointerException("The documents RDD is 'null'");
         return documents.take(1).get(0).getFeatures().size();
     }
-
-
 
     public static JavaRDD<LabelDocuments> getLabelDocuments(JavaRDD<MultilabelPoint> documents) {
         return documents.flatMapToPair(doc -> {
@@ -269,7 +220,6 @@ public class DataUtils {
             return new LabelDocuments(item._1(), item._2().stream().mapToInt(i -> i).toArray());
         });
     }
-
 
     public static JavaRDD<FeatureDocuments> getFeatureDocuments(JavaRDD<MultilabelPoint> documents) {
         return documents.flatMapToPair(doc -> {
@@ -307,7 +257,6 @@ public class DataUtils {
         }).map(item -> item._2());
     }
 
-
     public static void saveModel(MPBoostClassifier classifier, String outputFile) {
         if (classifier == null)
             throw new NullPointerException("The classifier is 'null'");
@@ -321,10 +270,9 @@ public class DataUtils {
             OutputStream fo = new BufferedOutputStream(new FileOutputStream(outputFile));
             oos = new ObjectOutputStream(fo);
             oos.writeObject(classifier);
-        } catch(Exception e) {
+        } catch (Exception e) {
             throw new RuntimeException("Writing classifier model", e);
-        }
-        finally {
+        } finally {
             if (oos != null)
                 try {
                     oos.close();
@@ -333,7 +281,6 @@ public class DataUtils {
                 }
         }
     }
-
 
     public static MPBoostClassifier loadModel(String inputFile) {
         if (inputFile == null)
@@ -353,6 +300,48 @@ public class DataUtils {
                     throw new RuntimeException(e);
                 }
             }
+        }
+    }
+
+    public static class LabelDocuments implements Serializable {
+        private final int labelID;
+        private final int[] documents;
+
+        public LabelDocuments(int labelID, int[] documents) {
+            this.labelID = labelID;
+            this.documents = documents;
+        }
+
+        public int getLabelID() {
+            return labelID;
+        }
+
+        public int[] getDocuments() {
+            return documents;
+        }
+    }
+
+    public static class FeatureDocuments implements Serializable {
+        private final int featureID;
+        private final int[] documents;
+        private final int[][] labels;
+
+        public FeatureDocuments(int featureID, int[] documents, int[][] labels) {
+            this.featureID = featureID;
+            this.documents = documents;
+            this.labels = labels;
+        }
+
+        public int getFeatureID() {
+            return featureID;
+        }
+
+        public int[] getDocuments() {
+            return documents;
+        }
+
+        public int[][] getLabels() {
+            return labels;
         }
     }
 }

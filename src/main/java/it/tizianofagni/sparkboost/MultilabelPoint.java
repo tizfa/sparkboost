@@ -20,11 +20,8 @@
 package it.tizianofagni.sparkboost;
 
 import org.apache.spark.mllib.linalg.SparseVector;
-import org.apache.spark.mllib.linalg.Vector;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * @author Tiziano Fagni (tiziano.fagni@isti.cnr.it)

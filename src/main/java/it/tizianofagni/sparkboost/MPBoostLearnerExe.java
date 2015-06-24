@@ -19,8 +19,6 @@
 
 package it.tizianofagni.sparkboost;
 
-import org.apache.commons.cli.*;
-import org.apache.ivy.util.cli.OptionBuilder;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaSparkContext;
 
@@ -30,7 +28,7 @@ import org.apache.spark.api.java.JavaSparkContext;
 public class MPBoostLearnerExe {
     public static void main(String[] args) {
         if (args.length != 5) {
-            System.out.println("Usage: "+MPBoostLearnerExe.class.getName()+" <inputFile> <outputFile> <numIterations> <sparkMaster> <parallelismDegree>");
+            System.out.println("Usage: " + MPBoostLearnerExe.class.getName() + " <inputFile> <outputFile> <numIterations> <sparkMaster> <parallelismDegree>");
             System.exit(-1);
         }
 
@@ -59,6 +57,6 @@ public class MPBoostLearnerExe {
         DataUtils.saveModel(classifier, outputFile);
 
         long endTime = System.currentTimeMillis();
-        System.out.println("Execution time: "+(endTime-startTime)+" milliseconds.");
+        System.out.println("Execution time: " + (endTime - startTime) + " milliseconds.");
     }
 }

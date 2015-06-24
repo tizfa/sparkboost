@@ -32,7 +32,7 @@ import java.util.Arrays;
 public class MPBoostClassifierExe {
     public static void main(String[] args) {
         if (args.length != 5) {
-            System.out.println("Usage: "+MPBoostClassifierExe.class.getName()+" <inputFile> <inputModel> <outputFile> <sparkMaster> <parallelismDegree>");
+            System.out.println("Usage: " + MPBoostClassifierExe.class.getName() + " <inputFile> <inputModel> <outputFile> <sparkMaster> <parallelismDegree>");
             System.exit(-1);
         }
 
@@ -57,13 +57,13 @@ public class MPBoostClassifierExe {
         // Write classification results to disk.
         StringBuilder sb = new StringBuilder();
         sb.append("**** Effectiveness\n");
-        sb.append(results.getCt().toString()+"\n");
+        sb.append(results.getCt().toString() + "\n");
         sb.append("********\n");
         for (int i = 0; i < results.getNumDocs(); i++) {
             int docID = results.getDocuments()[i];
             int[] labels = results.getLabels()[i];
             int[] goldLabels = results.getGoldLabels()[i];
-            sb.append("DocID: "+docID+", Labels assigned: "+ Arrays.toString(labels)+", Labels scores: "+Arrays.toString(results.getScores()[i])+", Gold labels: "+Arrays.toString(goldLabels)+"\n");
+            sb.append("DocID: " + docID + ", Labels assigned: " + Arrays.toString(labels) + ", Labels scores: " + Arrays.toString(results.getScores()[i]) + ", Gold labels: " + Arrays.toString(goldLabels) + "\n");
         }
         try {
             new File(outputFile).getParentFile().mkdirs();
@@ -72,6 +72,6 @@ public class MPBoostClassifierExe {
             throw new RuntimeException("Writing clasisfication results", e);
         }
         long endTime = System.currentTimeMillis();
-        System.out.println("Execution time: "+(endTime-startTime)+" milliseconds.");
+        System.out.println("Execution time: " + (endTime - startTime) + " milliseconds.");
     }
 }
