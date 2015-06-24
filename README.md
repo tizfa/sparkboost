@@ -8,7 +8,7 @@ The software allows to build MP-Boost multi-label multiclass classifiers startin
 IMPORTANT NOTE: currently the software only works with multiclass datasets containing categories IDs assigned in a 0-based way, i.e. if the dataset contains 10 labels, the set of valid IDs must be in the range [0, 9] included.
 
 ## Software compilation
-To build the software you need to have [Maven](https://maven.apache.org/) installed on your machine. Download a copy of this software repository on your machine on a specific folder, go inside that forlder and at the command prompt put the following commands:
+To build the software you need to have [Maven](https://maven.apache.org/) and a Java 8 compiler installed on your machine. Download a copy of this software repository on your machine on a specific folder, go inside that forlder and at the command prompt put the following commands:
 ```
 mvn clean
 mvn -P release package
