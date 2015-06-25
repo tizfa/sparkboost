@@ -19,7 +19,10 @@
 
 package it.tizianofagni.sparkboost;
 
+import org.apache.commons.cli.*;
 import org.apache.commons.io.FileUtils;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaSparkContext;
 
@@ -31,17 +34,54 @@ import java.util.Arrays;
  */
 public class BoostClassifierExe {
     public static void main(String[] args) {
-        if (args.length != 5) {
-            System.out.println("Usage: " + BoostClassifierExe.class.getName() + " <inputFile> <inputModel> <outputFile> <sparkMaster> <parallelismDegree>");
+
+        Options options = new Options();
+        Option opt = Option.builder("b").longOpt("binaryProblem").desc("Indicate if the input dataset contains a binary problem and not a multilabel one").build();
+        options.addOption(opt);
+        opt = Option.builder("z").longOpt("labels0Based").desc("Indicate if the labels IDs in the dataset to classify are already assigned in the range [0, numLabels-1] included").build();
+        options.addOption(opt);
+        opt = Option.builder("l").longOpt("enableSparkLogging").desc("Enable logging messages of Spark").build();
+        options.addOption(opt);
+
+        CommandLineParser parser = new DefaultParser();
+        CommandLine cmd = null;
+        String[] remainingArgs = null;
+        try {
+            cmd = parser.parse(options, args);
+            remainingArgs = cmd.getArgs();
+            if (remainingArgs.length != 5)
+                throw new ParseException("You need to specify all mandatory parameters");
+        } catch (ParseException e) {
+            System.out.println("Parsing failed.  Reason: " + e.getMessage());
+            HelpFormatter formatter = new HelpFormatter();
+            formatter.printHelp(BoostClassifierExe.class.getSimpleName() + " [OPTIONS] <inputFile> <inputModel> <outputFile> <sparkMaster> <parallelismDegree>", options);
             System.exit(-1);
         }
 
+        boolean binaryProblem = false;
+        if (cmd.hasOption("b"))
+            binaryProblem = true;
+        boolean labels0Based = false;
+        if (cmd.hasOption("z"))
+            labels0Based = true;
+        boolean enablingSparkLogging = false;
+        if (cmd.hasOption("l"))
+            enablingSparkLogging = true;
+
+        String inputFile = remainingArgs[0];
+        String inputModel = remainingArgs[1];
+        String outputFile = remainingArgs[2];
+        String sparkMaster = remainingArgs[3];
+        int parallelismDegree = Integer.parseInt(remainingArgs[4]);
+
+
         long startTime = System.currentTimeMillis();
-        String inputFile = args[0];
-        String inputModel = args[1];
-        String outputFile = args[2];
-        String sparkMaster = args[3];
-        int parallelismDegree = Integer.parseInt(args[4]);
+
+        // Disable Spark logging.
+        if (!enablingSparkLogging) {
+            Logger.getLogger("org").setLevel(Level.OFF);
+            Logger.getLogger("akka").setLevel(Level.OFF);
+        }
 
         // Create and configure Spark context.
         SparkConf conf = new SparkConf().setAppName("Spark MPBoost classifier");
@@ -52,7 +92,7 @@ public class BoostClassifierExe {
         BoostClassifier classifier = DataUtils.loadModel(inputModel);
 
         // Classify documents contained in "inputFile", a file in libsvm format.
-        ClassificationResults results = classifier.classify(sc, inputFile, parallelismDegree);
+        ClassificationResults results = classifier.classify(sc, inputFile, parallelismDegree, labels0Based, binaryProblem);
 
         // Write classification results to disk.
         StringBuilder sb = new StringBuilder();
@@ -69,7 +109,7 @@ public class BoostClassifierExe {
             new File(outputFile).getParentFile().mkdirs();
             FileUtils.writeStringToFile(new File(outputFile), sb.toString());
         } catch (Exception e) {
-            throw new RuntimeException("Writing clasisfication results", e);
+            throw new RuntimeException("Writing classisfication results", e);
         }
         long endTime = System.currentTimeMillis();
         System.out.println("Execution time: " + (endTime - startTime) + " milliseconds.");

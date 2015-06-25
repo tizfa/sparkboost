@@ -3,9 +3,7 @@ This repository contains a distributed implementation based on [Apache Spark](ht
 
 The software is open source and released under the terms of the [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0).
 
-The software allows to build MP-Boost multi-label multiclass classifiers starting from dataset files available in the [LibSvm](http://www.csie.ntu.edu.tw/~cjlin/libsvm/) format. A lot of ready datasets in this format are available [here](http://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/). 
-
-IMPORTANT NOTE: currently the software only works with multiclass datasets containing categories IDs assigned in a 0-based way, i.e. if the dataset contains 10 labels, the set of valid label IDs must be in the range [0, 9] included.
+The software allows to build multi-label multiclass classifiers or binary classifiers using AdaBoost.MH or MP-Boost starting from a dataset available in the [LibSvm](http://www.csie.ntu.edu.tw/~cjlin/libsvm/) format. A lot of ready datasets in this format are available [here](http://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/).
 
 ## Software compilation
 To build the software you need to have [Maven](https://maven.apache.org/) and a Java 8 compiler installed on your machine. Download a copy of this software repository on your machine on a specific folder, go inside that forlder and at the command prompt put the following commands:
@@ -16,6 +14,11 @@ mvn -P release package
 This set of commands will build a software bundle containing all the necessary Spark libraries. You can find the software bundle in the `target` directory of the software package.
 
 ## Software usage
+Currently the software allow to perform multilabel multiclass classification or binary classification over datasets available on in the LibSvm format. The user
+at learning and classification time must specify if the problem is or not of binary type (usage of `-b` flag in the available commands). In multiclass problems, the user should also specify
+if the labels IDs are 0-based or 1-based, i.e. if the number of valid labels is n then the set of valid IDs is in the range [0, 9] included (0-based) or [1,10] included (1-based). To specify
+if the labels are 0-based, the user can use the flag `-z` in the available commands.
+
 ### Building a MP-Boost classifier
 To build a MP-Boost classifier for a specific dataset file `path/to/datasetFile` (in the format libsvm), launch this command from prompt:
 ```

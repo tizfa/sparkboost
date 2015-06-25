@@ -48,7 +48,7 @@ public class DataUtils {
      * @param dataFile The data file.
      * @return An RDD containing the read points.
      */
-    public static JavaRDD<MultilabelPoint> loadLibSvmFileFormatDataAsList(JavaSparkContext sc, String dataFile) {
+    public static JavaRDD<MultilabelPoint> loadLibSvmFileFormatDataAsList(JavaSparkContext sc, String dataFile, boolean labels0Based, boolean binaryProblem) {
         if (sc == null)
             throw new NullPointerException("The Spark Context is 'null'");
         if (dataFile == null || dataFile.isEmpty())
@@ -69,11 +69,21 @@ public class DataUtils {
                         return null;
                     String[] fields = line.split("\\s+");
                     String[] t = fields[0].split(",");
-                    int[] labels = new int[t.length];
-                    for (int i = 0; i < t.length; i++) {
-                        String label = t[i];
-                        // Labels in multiclass should be already 0-based.
-                        labels[i] = new Double(Double.parseDouble(label)).intValue();
+                    int[] labels = new int[0];
+                    if (!binaryProblem) {
+                        labels = new int[t.length];
+                        for (int i = 0; i < t.length; i++) {
+                            String label = t[i];
+                            if (labels0Based)
+                                labels[i] = new Double(Double.parseDouble(label)).intValue();
+                            else
+                                labels[i] = new Double(Double.parseDouble(label)).intValue() - 1;
+                        }
+                    } else {
+                        int label = new Double(Double.parseDouble(t[0])).intValue();
+                        if (label > 0) {
+                            labels = new int[]{0};
+                        }
                     }
                     ArrayList<Integer> indexes = new ArrayList<Integer>();
                     ArrayList<Double> values = new ArrayList<Double>();
@@ -113,7 +123,7 @@ public class DataUtils {
      * @param dataFile The data file.
      * @return An RDD containing the read points.
      */
-    public static JavaRDD<MultilabelPoint> loadLibSvmFileFormatData(JavaSparkContext sc, String dataFile) {
+    public static JavaRDD<MultilabelPoint> loadLibSvmFileFormatData(JavaSparkContext sc, String dataFile, boolean labels0Based, boolean binaryProblem) {
         if (sc == null)
             throw new NullPointerException("The Spark Context is 'null'");
         if (dataFile == null || dataFile.isEmpty())
@@ -128,12 +138,23 @@ public class DataUtils {
             int index = (int) indexLong;
             String[] fields = line.split("\\s+");
             String[] t = fields[0].split(",");
-            int[] labels = new int[t.length];
-            for (int i = 0; i < t.length; i++) {
-                String label = t[i];
-                // Labels should be already 0-based.
-                labels[i] = new Double(Double.parseDouble(label)).intValue();
-                assert (labels[i] >= 0);
+            int[] labels = new int[0];
+            if (!binaryProblem) {
+                labels = new int[t.length];
+                for (int i = 0; i < t.length; i++) {
+                    String label = t[i];
+                    // Labels should be already 0-based.
+                    if (labels0Based)
+                        labels[i] = new Double(Double.parseDouble(label)).intValue();
+                    else
+                        labels[i] = new Double(Double.parseDouble(label)).intValue() - 1;
+                    assert (labels[i] >= 0);
+                }
+            } else {
+                int label = new Double(Double.parseDouble(t[0])).intValue();
+                if (label > 0) {
+                    labels = new int[]{0};
+                }
             }
             ArrayList<Integer> indexes = new ArrayList<Integer>();
             ArrayList<Double> values = new ArrayList<Double>();
@@ -189,7 +210,10 @@ public class DataUtils {
             throw new NullPointerException("The documents RDD is 'null'");
         int maxValidLabelID = documents.map(doc -> {
             List<Integer> values = Arrays.asList(ArrayUtils.toObject(doc.getLabels()));
-            return Collections.max(values);
+            if (values.size() == 0)
+                return 0;
+            else
+                return Collections.max(values);
         }).reduce((m1, m2) -> Math.max(m1, m2));
         return maxValidLabelID + 1;
     }

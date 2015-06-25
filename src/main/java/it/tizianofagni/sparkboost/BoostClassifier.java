@@ -58,7 +58,7 @@ public class BoostClassifier implements Serializable {
         this.whs = whs;
     }
 
-    ClassificationResults classify(JavaSparkContext sc, String libSvmFile, int parallelismDegree) {
+    ClassificationResults classify(JavaSparkContext sc, String libSvmFile, int parallelismDegree, boolean labels0Based, boolean binaryProblem) {
         if (sc == null)
             throw new NullPointerException("The Spark context is 'null'");
         if (libSvmFile == null || libSvmFile.isEmpty())
@@ -66,7 +66,7 @@ public class BoostClassifier implements Serializable {
         if (parallelismDegree < 1)
             throw new IllegalArgumentException("The parallelism degree is less than 1");
         System.out.println("Load initial data and generating all necessary internal data representations...");
-        JavaRDD<MultilabelPoint> docs = DataUtils.loadLibSvmFileFormatDataAsList(sc, libSvmFile)
+        JavaRDD<MultilabelPoint> docs = DataUtils.loadLibSvmFileFormatDataAsList(sc, libSvmFile, labels0Based, binaryProblem)
                 .repartition(parallelismDegree)
                 .cache();
         System.out.println("done!");

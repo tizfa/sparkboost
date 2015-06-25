@@ -58,9 +58,9 @@ public class AdaBoostMHLearner {
         this.parallelismDegree = parallelismDegree;
     }
 
-    public BoostClassifier buildModel(String libSvmFile) {
+    public BoostClassifier buildModel(String libSvmFile, boolean labels0Based, boolean binaryProblem) {
         System.out.println("Load initial data and generating all necessary internal data representations...");
-        JavaRDD<MultilabelPoint> docs = DataUtils.loadLibSvmFileFormatData(sc, libSvmFile).repartition(getParallelismDegree()).persist(StorageLevel.MEMORY_AND_DISK_SER());
+        JavaRDD<MultilabelPoint> docs = DataUtils.loadLibSvmFileFormatData(sc, libSvmFile, labels0Based, binaryProblem).repartition(getParallelismDegree()).persist(StorageLevel.MEMORY_AND_DISK_SER());
         int numDocs = DataUtils.getNumDocuments(docs);
         int numLabels = DataUtils.getNumLabels(docs);
         JavaRDD<DataUtils.LabelDocuments> labelDocuments = DataUtils.getLabelDocuments(docs).repartition(getParallelismDegree()).persist(StorageLevel.MEMORY_AND_DISK_SER());
