@@ -78,8 +78,13 @@ public class DataUtils {
                                 labels[i] = new Double(Double.parseDouble(label)).intValue();
                             else
                                 labels[i] = new Double(Double.parseDouble(label)).intValue() - 1;
+                            if (labels[i] < 0)
+                                throw new IllegalArgumentException("In current configuration I obtain a negative label ID value. Please check if this is a problem binary or multiclass " +
+                                        "and if the labels IDs are in form 0-based or 1-based");
                         }
                     } else {
+                        if (t.length > 1)
+                            throw new IllegalArgumentException("In binary problem you can only specify one label ID (+1 or -1) per document as valid label IDs");
                         int label = new Double(Double.parseDouble(t[0])).intValue();
                         if (label > 0) {
                             labels = new int[]{0};
@@ -148,9 +153,14 @@ public class DataUtils {
                         labels[i] = new Double(Double.parseDouble(label)).intValue();
                     else
                         labels[i] = new Double(Double.parseDouble(label)).intValue() - 1;
+                    if (labels[i] < 0)
+                        throw new IllegalArgumentException("In current configuration I obtain a negative label ID value. Please check if this is a problem binary or multiclass " +
+                                "and if the labels IDs are in form 0-based or 1-based");
                     assert (labels[i] >= 0);
                 }
             } else {
+                if (t.length > 1)
+                    throw new IllegalArgumentException("In binary problem you can only specify one label ID (+1 or -1) per document as valid label IDs");
                 int label = new Double(Double.parseDouble(t[0])).intValue();
                 if (label > 0) {
                     labels = new int[]{0};

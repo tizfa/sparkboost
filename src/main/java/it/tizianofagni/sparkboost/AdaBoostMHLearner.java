@@ -60,11 +60,24 @@ public class AdaBoostMHLearner {
 
     public BoostClassifier buildModel(String libSvmFile, boolean labels0Based, boolean binaryProblem) {
         System.out.println("Load initial data and generating all necessary internal data representations...");
-        JavaRDD<MultilabelPoint> docs = DataUtils.loadLibSvmFileFormatData(sc, libSvmFile, labels0Based, binaryProblem).repartition(getParallelismDegree()).persist(StorageLevel.MEMORY_AND_DISK_SER());
+        JavaRDD<MultilabelPoint> docs = DataUtils.loadLibSvmFileFormatData(sc, libSvmFile, labels0Based, binaryProblem);
+        if (docs.partitions().size() < getParallelismDegree()) {
+            docs = docs.repartition(getParallelismDegree());
+        }
+        docs = docs.persist(StorageLevel.MEMORY_AND_DISK_SER());
         int numDocs = DataUtils.getNumDocuments(docs);
         int numLabels = DataUtils.getNumLabels(docs);
-        JavaRDD<DataUtils.LabelDocuments> labelDocuments = DataUtils.getLabelDocuments(docs).repartition(getParallelismDegree()).persist(StorageLevel.MEMORY_AND_DISK_SER());
-        JavaRDD<DataUtils.FeatureDocuments> featureDocuments = DataUtils.getFeatureDocuments(docs).repartition(getParallelismDegree()).persist(StorageLevel.MEMORY_AND_DISK_SER());
+        JavaRDD<DataUtils.LabelDocuments> labelDocuments = DataUtils.getLabelDocuments(docs);
+        if (labelDocuments.partitions().size() < getParallelismDegree()) {
+            labelDocuments = labelDocuments.repartition(getParallelismDegree());
+        }
+        labelDocuments = labelDocuments.persist(StorageLevel.MEMORY_AND_DISK_SER());
+
+        JavaRDD<DataUtils.FeatureDocuments> featureDocuments = DataUtils.getFeatureDocuments(docs);
+        if (featureDocuments.partitions().size() < getParallelismDegree()) {
+            featureDocuments = featureDocuments.repartition(getParallelismDegree());
+        }
+        featureDocuments = featureDocuments.persist(StorageLevel.MEMORY_AND_DISK_SER());
         System.out.println("Ok, done!");
 
         WeakHypothesis[] computedWH = new WeakHypothesis[numIterations];

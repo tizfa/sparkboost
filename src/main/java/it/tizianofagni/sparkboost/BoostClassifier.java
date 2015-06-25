@@ -66,9 +66,11 @@ public class BoostClassifier implements Serializable {
         if (parallelismDegree < 1)
             throw new IllegalArgumentException("The parallelism degree is less than 1");
         System.out.println("Load initial data and generating all necessary internal data representations...");
-        JavaRDD<MultilabelPoint> docs = DataUtils.loadLibSvmFileFormatDataAsList(sc, libSvmFile, labels0Based, binaryProblem)
-                .repartition(parallelismDegree)
-                .cache();
+        JavaRDD<MultilabelPoint> docs = DataUtils.loadLibSvmFileFormatDataAsList(sc, libSvmFile, labels0Based, binaryProblem);
+        if (docs.partitions().size() < parallelismDegree) {
+            docs = docs.repartition(parallelismDegree);
+        }
+        docs = docs.cache();
         System.out.println("done!");
         System.out.println("Classifying documents...");
         Broadcast<WeakHypothesis[]> whsBr = sc.broadcast(whs);
