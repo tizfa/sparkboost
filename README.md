@@ -30,15 +30,6 @@ then in the dependencies list add
 </dependency>
 ```
 
-
-## Software compilation for latest snapshot
-If you are interested in using the latest snapshot of the software, you need to have [Maven](https://maven.apache.org/) and a Java 8 compiler installed on your machine. Download a copy of this software repository on your machine on a specific folder, go inside that folder, switch to branch 'develop' and at the command prompt put the following commands:
-```
-mvn clean
-mvn -P release package
-```
-This set of commands will build a software bundle containing all the necessary Spark libraries. You can find the software bundle in the `target` directory of the software package.
-
 ## Software usage
 ### Using provided command line tools
 Currently the software allow to perform multilabel multiclass classification or binary classification over datasets available on in the LibSvm format. The user
@@ -46,24 +37,32 @@ at learning and classification time must specify if the problem is or not of bin
 if the labels IDs are 0-based or 1-based, i.e. if the number of valid labels is n then the set of valid IDs is in the range [0, 9] included (0-based) or [1,10] included (1-based). To specify
 if the labels are 0-based, the user can use the flag `-z` in the available commands.
 
+#### Software compilation to use command line tools
+If you are interested to use the command line tools available with the software, you need to download the latest release sources available from [here] and the compile them. To perform this task, you need (https://github.com/tizfa/sparkboost/archive/master.zip)  [Maven](https://maven.apache.org/) and a Java 8 compiler installed on your machine. Download a copy of this software repository on your machine on a specific folder, go inside that folder and at the command prompt put the following commands:
+```
+mvn clean
+mvn -P shading package
+```
+This set of commands will build a software bundle containing all the necessary Spark libraries. You can find the software bundle in the `target` directory of the software package.
+
 #### Building a MP-Boost classifier
 To build a MP-Boost classifier for a specific dataset file `path/to/datasetFile` (in the format libsvm), launch this command from prompt:
 ```
-java -cp ./target/sparkboost-0.1-SNAPSHOT-bundle.jar it.tizianofagni.sparkboost.MPBoostLearnerExe path/to/datasetfile path/to/modelOutput numIterations sparkMasterName parallelismDegree
+java -cp ./target/sparkboost-0.5-bundle.jar it.tizianofagni.sparkboost.MPBoostLearnerExe path/to/datasetfile path/to/modelOutput numIterations sparkMasterName parallelismDegree
 ```
 where `path/to/modelOutput` is the output file where the generated classifier will be save, `numIterations` is the number of iterations used in the algorithm, `sparkMasterName` is the name of Spark master host (or local[*] for executing the process locally on your machine) and `parallelismDegree` is the number of processing units to use while executing the algorithm.
 
 #### Building an AdaBoost.MH classifier
 To build a AdaBoost.MH classifier for a specific dataset file `path/to/datasetFile` (in the format libsvm), launch this command from prompt:
 ```
-java -cp ./target/sparkboost-0.1-SNAPSHOT-bundle.jar it.tizianofagni.sparkboost.AdaBoostMHLearnerExe path/to/datasetfile path/to/modelOutput numIterations sparkMasterName parallelismDegree
+java -cp ./target/sparkboost-0.5-bundle.jar it.tizianofagni.sparkboost.AdaBoostMHLearnerExe path/to/datasetfile path/to/modelOutput numIterations sparkMasterName parallelismDegree
 ```
 where `path/to/modelOutput` is the output file where the generated classifier will be save, `numIterations` is the number of iterations used in the algorithm, `sparkMasterName` is the name of Spark master host (or local[*] for executing the process locally on your machine) and `parallelismDegree` is the number of processing units to use while executing the algorithm.
 
 #### Using a classifier
 To use an already built classifier over a test dataset (it does not matter if the model has been built with MP-Boost or AdaBoost.MH learner, they share the same forrmat for classification models!), use this command:
 ```
-java -cp ./target/sparkboost-0.1-SNAPSHOT-bundle.jar it.tizianofagni.sparkboost.BoostClassifierExe datasetfile classifierModel outputResultsFile sparkMasterName parallelismDegree
+java -cp ./target/sparkboost-0.5-bundle.jar it.tizianofagni.sparkboost.BoostClassifierExe datasetfile classifierModel outputResultsFile sparkMasterName parallelismDegree
 ```
 where `datasetFile` is the input file containing the dataset test examples, `classifierModel` is the file containing a previous generated classifier, `outputResultsFile` is the ouput file containing classification results, `sparkMasterName` is the name of Spark master host (or local[*] for executing the process locally on your machine) and `parallelismDegree` is the number of processing units to use while executing the algorithm.
 
@@ -151,3 +150,11 @@ for (int i = 0; i < results.getNumDocs(); i++) {
     sb.append("DocID: " + docID + ", Labels assigned: " + Arrays.toString(labels) + ", Labels scores: " + Arrays.toString(results.getScores()[i]) + ", Gold labels: " + Arrays.toString(goldLabels) + "\n");
 }
 ```
+
+## Software compilation for latest snapshot
+If you are interested in using the latest snapshot of the software, you need to have [Maven](https://maven.apache.org/) and a Java 8 compiler installed on your machine. Download a copy of this software repository on your machine on a specific folder, go inside that folder, switch to branch 'develop' and at the command prompt put the following commands:
+```
+mvn clean
+mvn -P release package
+```
+This set of commands will build a software bundle containing all the necessary Spark libraries. You can find the software bundle in the `target` directory of the software package.
