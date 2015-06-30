@@ -5,8 +5,34 @@ The software is open source and released under the terms of the [Apache License,
 
 The software allows to build multi-label multiclass classifiers or binary classifiers using AdaBoost.MH or MP-Boost starting from a dataset available in the [LibSvm](http://www.csie.ntu.edu.tw/~cjlin/libsvm/) format. A lot of ready datasets in this format are available [here](http://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/).
 
-## Software compilation
-To build the software you need to have [Maven](https://maven.apache.org/) and a Java 8 compiler installed on your machine. Download a copy of this software repository on your machine on a specific folder, go inside that forlder and at the command prompt put the following commands:
+## Software installation
+To use the latest release of this software in your projects, in your project POM add the following:
+```
+<repositories>
+
+    <repository>
+        <id>sparkboost-mvn-repo</id>
+        <url>https://raw.github.com/tizfa/sparkboost/mvn-repo/</url>
+        <snapshots>
+            <enabled>true</enabled>
+            <updatePolicy>always</updatePolicy>
+        </snapshots>
+    </repository>
+
+</repositories>
+```
+then in the dependencies list add
+```
+<dependency>
+    <groupId>it.tizianofagni</groupId>
+    <artifactId>sparkboost</artifactId>
+    <version>0.5</version>
+</dependency>
+```
+
+
+## Software compilation for latest snapshot
+If you are interested in using the latest snapshot of the software, you need to have [Maven](https://maven.apache.org/) and a Java 8 compiler installed on your machine. Download a copy of this software repository on your machine on a specific folder, go inside that folder, switch to branch 'develop' and at the command prompt put the following commands:
 ```
 mvn clean
 mvn -P release package
