@@ -85,7 +85,7 @@ We built a MP-Boost classification model using 500 iterations and using a single
 Precision: 0.8331455753966425, Recall: 0.6987996337970667, F1:0.7600817829421506
 
 ### Using libray API to build your own programs
-An example of using [the API](apidocs/0.5/apidocs/index.html) is given by the provided command line tools. Just watch the source code of classes AdaBoostMHLearnerExe.java, MPBoostLearnerExe.java and BoostClassifierExe.java.
+An example of using the API is given by the provided command line tools. Just watch the source code of classes AdaBoostMHLearnerExe.java, MPBoostLearnerExe.java and BoostClassifierExe.java.
 Briefly to build a classifier you can use a code like this:
 ```java
 JavaSparkContext sc = ... // Spark context to use;
