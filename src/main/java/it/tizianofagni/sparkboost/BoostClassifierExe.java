@@ -42,6 +42,8 @@ public class BoostClassifierExe {
         options.addOption(opt);
         opt = Option.builder("l").longOpt("enableSparkLogging").desc("Enable logging messages of Spark").build();
         options.addOption(opt);
+        opt = Option.builder("w").longOpt("windowsLocalModeFix").hasArg().desc("Set the directory containing the winutils.exe command").build();
+        options.addOption(opt);
 
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd = null;
@@ -68,6 +70,10 @@ public class BoostClassifierExe {
         if (cmd.hasOption("l"))
             enablingSparkLogging = true;
 
+        if (cmd.hasOption("w")) {
+            System.setProperty("hadoop.home.dir", cmd.getOptionValue("w"));
+        }
+
         String inputFile = remainingArgs[0];
         String inputModel = remainingArgs[1];
         String outputFile = remainingArgs[2];
@@ -88,8 +94,8 @@ public class BoostClassifierExe {
         conf.setMaster(sparkMaster);
         JavaSparkContext sc = new JavaSparkContext(conf);
 
-        // Load MPBoost classifier from disk.
-        BoostClassifier classifier = DataUtils.loadModel(inputModel);
+        // Load boosting classifier from disk.
+        BoostClassifier classifier = DataUtils.loadModel(sc, inputModel);
 
         // Classify documents contained in "inputFile", a file in libsvm format.
         ClassificationResults results = classifier.classify(sc, inputFile, parallelismDegree, labels0Based, binaryProblem);

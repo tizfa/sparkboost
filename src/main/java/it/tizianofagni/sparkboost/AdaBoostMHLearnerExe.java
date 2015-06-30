@@ -37,6 +37,8 @@ public class AdaBoostMHLearnerExe {
         options.addOption(opt);
         opt = Option.builder("l").longOpt("enableSparkLogging").desc("Enable logging messages of Spark").build();
         options.addOption(opt);
+        opt = Option.builder("w").longOpt("windowsLocalModeFix").hasArg().desc("Set the directory containing the winutils.exe command").build();
+        options.addOption(opt);
 
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd = null;
@@ -62,6 +64,10 @@ public class AdaBoostMHLearnerExe {
         boolean enablingSparkLogging = false;
         if (cmd.hasOption("l"))
             enablingSparkLogging = true;
+
+        if (cmd.hasOption("w")) {
+            System.setProperty("hadoop.home.dir", cmd.getOptionValue("w"));
+        }
 
         String inputFile = remainingArgs[0];
         String outputFile = remainingArgs[1];
@@ -93,7 +99,7 @@ public class AdaBoostMHLearnerExe {
         BoostClassifier classifier = learner.buildModel(inputFile, labels0Based, binaryProblem);
 
         // Save classifier to disk.
-        DataUtils.saveModel(classifier, outputFile);
+        DataUtils.saveModel(sc, classifier, outputFile);
 
         long endTime = System.currentTimeMillis();
         System.out.println("Execution time: " + (endTime - startTime) + " milliseconds.");

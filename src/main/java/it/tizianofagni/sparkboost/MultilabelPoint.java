@@ -24,28 +24,34 @@ import org.apache.spark.mllib.linalg.SparseVector;
 import java.io.Serializable;
 
 /**
+ * This is the representation of a point or document in a multiclass/binary
+ * problem.
+ *
  * @author Tiziano Fagni (tiziano.fagni@isti.cnr.it)
  */
 public class MultilabelPoint implements Serializable {
 
-    private final int docID;
+    /**
+     * The document unique ID.
+     */
+    private final int pointID;
 
     /**
-     * If available, The set of features representing this point.
+     * The set of features representing this point.
      */
     private final SparseVector features;
 
     /**
-     * The set of labels assigned to this point.
+     * The set of labels assigned to this point or an empty set if no labels are assigned.
      */
     private final int[] labels;
 
-    public MultilabelPoint(int docID, SparseVector features, int[] labels) {
+    public MultilabelPoint(int pointID, SparseVector features, int[] labels) {
         if (features == null)
             throw new NullPointerException("The set of features is 'null'");
         if (labels == null)
             throw new NullPointerException("The set of labels is 'null'");
-        this.docID = docID;
+        this.pointID = pointID;
         this.features = features;
         this.labels = labels;
     }
@@ -60,15 +66,22 @@ public class MultilabelPoint implements Serializable {
     }
 
     /**
-     * Get the set of labels assigned to this point.
+     * Get the set of labels assigned to this point. In binary problems, a point can have assigned
+     * at most 1 label (labelID equals to 0).
      *
-     * @return The set of labels assigned to this point.
+     * @return The set of labels assigned to this point or an empty set if no labels are assigned to it.
      */
     public int[] getLabels() {
         return labels;
     }
 
-    public int getDocID() {
-        return docID;
+    /**
+     * Get the point unique ID. Every point in a {@link org.apache.spark.api.java.JavaRDD} must have
+     * an unique assigned ID.
+     *
+     * @return The point unique ID.
+     */
+    public int getPointID() {
+        return pointID;
     }
 }

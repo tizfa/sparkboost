@@ -36,6 +36,7 @@ package it.tizianofagni.sparkboost;/*
  * ******************
  */
 
+import org.apache.log4j.Logger;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.broadcast.Broadcast;
@@ -46,10 +47,16 @@ import java.util.HashMap;
 import java.util.HashSet;
 
 /**
+ * A boosting classifier built with {@link AdaBoostMHLearner} or
+ * {@link MpBoostLearner} classes.
+ *
  * @author Tiziano Fagni (tiziano.fagni@isti.cnr.it)
  */
 public class BoostClassifier implements Serializable {
 
+    /**
+     * The set of weak hypothesis of the model.
+     */
     private final WeakHypothesis[] whs;
 
     public BoostClassifier(WeakHypothesis[] whs) {
@@ -58,21 +65,34 @@ public class BoostClassifier implements Serializable {
         this.whs = whs;
     }
 
-    ClassificationResults classify(JavaSparkContext sc, String libSvmFile, int parallelismDegree, boolean labels0Based, boolean binaryProblem) {
+
+    /**
+     * Classify the set of input documents. Please be sure that that the features IDs and labels IDs
+     * used in this document set match those used during training phase.
+     * <p>
+     * IMPORTANT NOTE: the classification results are collected on the driver process so the results
+     * are stored on RAM memory. If you classify a lot of documents, be sure to give enough memory to Spark
+     * driver process or just split your documents collection in small partitions and classify one partition at
+     * time.
+     *
+     * @param sc                The Spark context.
+     * @param docs              The set of documents to classify.
+     * @param parallelismDegree The number of workers used to classify documents.
+     * @return The results of the classification process.
+     */
+    public ClassificationResults classify(JavaSparkContext sc, JavaRDD<MultilabelPoint> docs, int parallelismDegree) {
         if (sc == null)
             throw new NullPointerException("The Spark context is 'null'");
-        if (libSvmFile == null || libSvmFile.isEmpty())
-            throw new IllegalArgumentException("The data file is 'null' or empty");
-        if (parallelismDegree < 1)
-            throw new IllegalArgumentException("The parallelism degree is less than 1");
-        System.out.println("Load initial data and generating all necessary internal data representations...");
-        JavaRDD<MultilabelPoint> docs = DataUtils.loadLibSvmFileFormatDataAsList(sc, libSvmFile, labels0Based, binaryProblem);
+        if (docs == null)
+            throw new NullPointerException("The set of documents to classify is 'null'");
+
+        Logging.l().info("Load initial data and generating all necessary internal data representations...");
         if (docs.partitions().size() < parallelismDegree) {
             docs = docs.repartition(parallelismDegree);
         }
         docs = docs.cache();
-        System.out.println("done!");
-        System.out.println("Classifying documents...");
+        Logging.l().info("done!");
+        Logging.l().info("Classifying documents...");
         Broadcast<WeakHypothesis[]> whsBr = sc.broadcast(whs);
         ClassificationResults classifications = docs.map(doc -> {
             WeakHypothesis[] whs = whsBr.getValue();
@@ -94,7 +114,7 @@ public class BoostClassifier implements Serializable {
                 }
             }
 
-            PreliminaryDocumentClassification dc = new PreliminaryDocumentClassification(doc.getDocID(), doc.getLabels(), scores);
+            PreliminaryDocumentClassification dc = new PreliminaryDocumentClassification(doc.getPointID(), doc.getLabels(), scores);
             HashSet<Integer> goldLabels = new HashSet<>();
             for (int labelID : dc.getGoldLabels())
                 goldLabels.add(labelID);
@@ -168,8 +188,34 @@ public class BoostClassifier implements Serializable {
             return new ClassificationResults(numDocuments, documents, labels, scores, goldLabels, ct);
         });
 
-        System.out.println("done.");
+        Logging.l().info("done.");
         return classifications;
+    }
+
+
+    /**
+     * Classify the set of input documents contained in the specified file. The file must be in LibSvm data format. Each document
+     * in the input dataset will get a document ID corresponding at the original row index of the document in the dataset file.
+     *
+     * @param sc
+     * @param libSvmFile        The input file containing documents to classify.
+     * @param parallelismDegree The number of workers used to classify documents.
+     * @param labels0Based      True if the label indexes specified in the input file are 0-based (i.e. the first label ID is 0), false if they
+     *                          are 1-based (i.e. the first label ID is 1).
+     * @param binaryProblem     True if the input file contains data for a binary problem, false if the input file contains data for a multiclass multilabel
+     *                          problem.
+     * @return The results of the classification process.
+     */
+    public ClassificationResults classify(JavaSparkContext sc, String libSvmFile, int parallelismDegree, boolean labels0Based, boolean binaryProblem) {
+        if (sc == null)
+            throw new NullPointerException("The Spark context is 'null'");
+        if (libSvmFile == null || libSvmFile.isEmpty())
+            throw new IllegalArgumentException("The data file is 'null' or empty");
+        if (parallelismDegree < 1)
+            throw new IllegalArgumentException("The parallelism degree is less than 1");
+        System.out.println("Load initial data and generating all necessary internal data representations...");
+        JavaRDD<MultilabelPoint> docs = DataUtils.loadLibSvmFileFormatDataAsList(sc, libSvmFile, labels0Based, binaryProblem);
+        return classify(sc, docs, parallelismDegree);
     }
 
     private class PreliminaryDocumentClassification implements Serializable {

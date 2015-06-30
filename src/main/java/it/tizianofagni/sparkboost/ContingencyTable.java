@@ -21,6 +21,14 @@ package it.tizianofagni.sparkboost;
 
 import java.io.Serializable;
 
+/**
+ * A contingency table for a classification task.<br/><br/>
+ * This structure allows to evaluate a classification
+ * task by providing some specific measures like {@link #f1()},
+ * {@link #precision()} or {@link #recall()}.
+ *
+ * @author Tiziano Fagni (tiziano.fagni@isti.cnr.it)
+ */
 public class ContingencyTable implements Serializable {
 
     private final int tp;
@@ -37,26 +45,48 @@ public class ContingencyTable implements Serializable {
     }
 
 
+    /**
+     * Get the number of true positives.
+     *
+     * @return The number of true positives.
+     */
     public int tp() {
         return tp;
     }
 
+    /**
+     * Get the number of true negatives.
+     *
+     * @return The number of true negatives.
+     */
     public int tn() {
         return tn;
     }
 
+    /**
+     * Get the number of false positives.
+     *
+     * @return The number of false positives.
+     */
     public int fp() {
         return fp;
     }
 
+    /**
+     * Get the number of false negatives.
+     *
+     * @return The number of false negatives.
+     */
     public int fn() {
         return fn;
     }
 
-    public int total() {
-        return fn + fp + tn + tp;
-    }
 
+    /**
+     * Get the obtained precision.
+     *
+     * @return The obtained precision.
+     */
     public double precision() {
         double den = tp + fp;
         if (den != 0)
@@ -65,6 +95,11 @@ public class ContingencyTable implements Serializable {
             return 1.0;
     }
 
+    /**
+     * Get the obtained recall.
+     *
+     * @return The obtained recall.
+     */
     public double recall() {
         double den = tp + fn;
         if (den != 0)
@@ -73,6 +108,12 @@ public class ContingencyTable implements Serializable {
             return 1.0;
     }
 
+    /**
+     * Get the F_beta measure.
+     *
+     * @param beta The beta param value.
+     * @return The F_beta measure.
+     */
     public double f(double beta) {
         double beta2 = beta * beta;
         double den = (beta2 + 1.0) * tp + fp + beta2 * fn;
@@ -83,10 +124,20 @@ public class ContingencyTable implements Serializable {
     }
 
 
+    /**
+     * Get the F1 value.
+     *
+     * @return The F1 value.
+     */
     public double f1() {
         return f(1.0);
     }
 
+    /**
+     * Get the accuracy of classification task.
+     *
+     * @return The accuracy of classification task.
+     */
     public double accuracy() {
         double den = tp + tn + fp + fn;
         if (den != 0)
@@ -95,35 +146,21 @@ public class ContingencyTable implements Serializable {
             return 1.0;
     }
 
+    /**
+     * Get the error obtained in classification task.
+     *
+     * @return The error obtained in classification task.
+     */
     public double error() {
         return 1.0 - accuracy();
     }
 
-    public double pd() {
-        double den = tp + tn + fp + fn;
-        if (den == 0)
-            return 0.0;
-        return Math.abs((fp - fn) / den);
-    }
 
-    public double relativePd() {
-        double den = tp + tn + fp + fn;
-        if (den == 0)
-            return 0;
-
-        double pd = pd();
-        double pos = (tp + fn) / den;
-
-        if (pos == 0) {
-            if (pd == 0)
-                return 0;
-            else
-                return 1.0;
-        } else
-            return Math.min(pd / pos, 1.0);
-    }
-
-
+    /**
+     * Get the specificity value.
+     *
+     * @return The specificity value.
+     */
     public double specificity() {
         double den = tn() + fp();
         if (den != 0)
@@ -132,16 +169,21 @@ public class ContingencyTable implements Serializable {
             return 0;
     }
 
-    public double fpr() {
-        return 1.0 - specificity();
-    }
 
+    /**
+     * Get the ROC value.
+     *
+     * @return The ROC value.
+     */
     public double roc() {
         return (specificity() + recall()) / 2;
     }
 
 
     @Override
+    /**
+     * Return a string containing all main measures of this contingency table.
+     */
     public String toString() {
         StringBuilder sb = new StringBuilder("TP: " + tp() + ", TN: " + tn() + ", FP: " + fp() + ", FN: " + fn() + "\n");
         sb.append("Precision: " + precision() + ", Recall: " + recall() + ", F1:" + f1() + ", Accuracy: " + accuracy() + ", ROC: " + roc());

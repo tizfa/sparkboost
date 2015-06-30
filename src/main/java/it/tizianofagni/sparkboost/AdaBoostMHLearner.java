@@ -29,7 +29,9 @@ import java.util.HashMap;
 import java.util.Iterator;
 
 /**
- * A Spark implementation of AdaBoost.MH learner.
+ * A Spark implementation of AdaBoost.MH learner.<br/><br/>
+ * The original article describing the algorithm can be found at
+ * <a href="http://link.springer.com/article/10.1023%2FA%3A1007649029923">http://link.springer.com/article/10.1023%2FA%3A1007649029923</a>.
  *
  * @author Tiziano Fagni (tiziano.fagni@isti.cnr.it)
  */
@@ -40,6 +42,10 @@ public class AdaBoostMHLearner {
      * The number of iterations.
      */
     private int numIterations;
+
+    /**
+     * The number of workers to use while analyzing the data.
+     */
     private int parallelismDegree;
 
     public AdaBoostMHLearner(JavaSparkContext sc) {
@@ -50,17 +56,36 @@ public class AdaBoostMHLearner {
         this.numIterations = 200;
     }
 
+    /**
+     * Get the number of workers used while building a new classifier.
+     *
+     * @return The number of workers used while building a new classifier.
+     */
     public int getParallelismDegree() {
         return parallelismDegree;
     }
 
+    /**
+     * Set the number of workers used while building a new classifier.
+     *
+     * @param parallelismDegree The number of workers to use.
+     */
     public void setParallelismDegree(int parallelismDegree) {
         this.parallelismDegree = parallelismDegree;
     }
 
-    public BoostClassifier buildModel(String libSvmFile, boolean labels0Based, boolean binaryProblem) {
-        System.out.println("Load initial data and generating all necessary internal data representations...");
-        JavaRDD<MultilabelPoint> docs = DataUtils.loadLibSvmFileFormatData(sc, libSvmFile, labels0Based, binaryProblem);
+    /**
+     * Build a new classifier by analyzing the training data available in the
+     * specified documents set.
+     *
+     * @param docs The set of documents used as training data.
+     * @return A new AdaBoost.MH classifier.
+     */
+    public BoostClassifier buildModel(JavaRDD<MultilabelPoint> docs) {
+        if (docs == null)
+            throw new NullPointerException("The set of input documents is 'null'");
+
+        Logging.l().info("Load initial data and generating all necessary internal data representations...");
         if (docs.partitions().size() < getParallelismDegree()) {
             docs = docs.repartition(getParallelismDegree());
         }
@@ -78,7 +103,7 @@ public class AdaBoostMHLearner {
             featureDocuments = featureDocuments.repartition(getParallelismDegree());
         }
         featureDocuments = featureDocuments.persist(StorageLevel.MEMORY_AND_DISK_SER());
-        System.out.println("Ok, done!");
+        Logging.l().info("Ok, done!");
 
         WeakHypothesis[] computedWH = new WeakHypothesis[numIterations];
         double[][] localDM = initDistributionMatrix(numLabels, numDocs);
@@ -93,18 +118,32 @@ public class AdaBoostMHLearner {
             // Save current generated weak hypothesis.
             computedWH[i] = localWH;
 
-            if (((i + 1) % 5) == 0)
-                System.out.print("" + (i + 1));
-            else
-                System.out.print(".");
-
-            if (((i + 1) % 50) == 0)
-                System.out.println("");
+            Logging.l().info("Completed iteration " + (i + 1));
         }
 
-        System.out.println("Model built!");
+        Logging.l().info("Model built!");
 
         return new BoostClassifier(computedWH);
+    }
+
+
+    /**
+     * Build a new classifier by analyzing the training data available in the
+     * specified input file. The file must be in LibSvm data format.
+     *
+     * @param libSvmFile    The input file containing the documents used as training data.
+     * @param labels0Based  True if the label indexes specified in the input file are 0-based (i.e. the first label ID is 0), false if they
+     *                      are 1-based (i.e. the first label ID is 1).
+     * @param binaryProblem True if the input file contains data for a binary problem, false if the input file contains data for a multiclass multilabel
+     *                      problem.
+     * @return A new AdaBoost.MH classifier.
+     */
+    public BoostClassifier buildModel(String libSvmFile, boolean labels0Based, boolean binaryProblem) {
+        if (libSvmFile == null || libSvmFile.isEmpty())
+            throw new IllegalArgumentException("The input file is 'null' or empty");
+
+        JavaRDD<MultilabelPoint> docs = DataUtils.loadLibSvmFileFormatData(sc, libSvmFile, labels0Based, binaryProblem);
+        return buildModel(docs);
     }
 
     protected void updateDistributionMatrix(JavaSparkContext sc, JavaRDD<MultilabelPoint> docs, double[][] localDM, WeakHypothesis localWH) {
@@ -138,11 +177,11 @@ public class AdaBoostMHLearner {
                     value = v.getC0();
 
 
-                double partialRes = dm[labelID][doc.getDocID()] * Math.exp(catValue * value);
+                double partialRes = dm[labelID][doc.getPointID()] * Math.exp(catValue * value);
                 labelsRes[labelID] = partialRes;
             }
 
-            return new DMPartialResult(doc.getDocID(), labelsRes);
+            return new DMPartialResult(doc.getPointID(), labelsRes);
         });
 
         Iterator<DMPartialResult> itResults = partialResults.toLocalIterator();
@@ -338,10 +377,20 @@ public class AdaBoostMHLearner {
         return wh;
     }
 
+    /**
+     * Get the number of iterations used while building classifier.
+     *
+     * @return The number of iterations used while building classifier.
+     */
     public int getNumIterations() {
         return numIterations;
     }
 
+    /**
+     * Set the number of iterations to use while building a new classifier.
+     *
+     * @param numIterations The number of iterations to use.
+     */
     public void setNumIterations(int numIterations) {
         this.numIterations = numIterations;
     }

@@ -238,7 +238,7 @@ public class DataUtils {
         return documents.flatMapToPair(doc -> {
             int[] labels = doc.getLabels();
             ArrayList<Integer> docAr = new ArrayList<Integer>();
-            docAr.add(doc.getDocID());
+            docAr.add(doc.getPointID());
             ArrayList<Tuple2<Integer, ArrayList<Integer>>> ret = new ArrayList<Tuple2<Integer, ArrayList<Integer>>>();
             for (int i = 0; i < labels.length; i++) {
                 ret.add(new Tuple2<>(labels[i], docAr));
@@ -262,7 +262,7 @@ public class DataUtils {
             ArrayList<Tuple2<Integer, FeatureDocuments>> ret = new ArrayList<>();
             for (int i = 0; i < indices.length; i++) {
                 int featureID = indices[i];
-                int[] docs = new int[]{doc.getDocID()};
+                int[] docs = new int[]{doc.getPointID()};
                 int[][] labels = new int[1][];
                 labels[0] = doc.getLabels();
                 ret.add(new Tuple2<>(featureID, new FeatureDocuments(featureID, docs, labels)));
@@ -291,50 +291,49 @@ public class DataUtils {
         }).map(item -> item._2());
     }
 
-    public static void saveModel(BoostClassifier classifier, String outputFile) {
+    /**
+     * Save a boosting classifier model to the specified output model path (any valid path recognized by
+     * Spark/Hadoop).
+     * <br/><br/>
+     * IMPORTANT NOTE: if you are executing Spark in local mode under Windows, you can get this strange error
+     * as described <a href="https://issues.apache.org/jira/browse/SPARK-6961?jql=project%20%3D%20SPARK%20AND%20text%20~%20%22save%20file%20local%22">here</a>.
+     * Currently the workaround is to install the winutils executable on the path corresponding to Hadoop installation (see
+     * <a href="http://stackoverflow.com/questions/24832284/nullpointerexception-in-spark-sql">here</a> for more details about this workaround).
+     *
+     * @param sc              The Spark context.
+     * @param classifier      The classifier to be save.
+     * @param outputModelPath The output path where to save the model.
+     */
+    public static void saveModel(JavaSparkContext sc, BoostClassifier classifier, String outputModelPath) {
+        if (sc == null)
+            throw new NullPointerException("The Spark context is 'null'");
         if (classifier == null)
             throw new NullPointerException("The classifier is 'null'");
-        if (outputFile == null)
-            throw new NullPointerException("The output file is 'null'");
+        if (outputModelPath == null)
+            throw new NullPointerException("The output model path is 'null'");
 
-        File fout = new File(outputFile);
-        fout.getParentFile().mkdirs();
-        ObjectOutputStream oos = null;
-        try {
-            OutputStream fo = new BufferedOutputStream(new FileOutputStream(outputFile));
-            oos = new ObjectOutputStream(fo);
-            oos.writeObject(classifier);
-        } catch (Exception e) {
-            throw new RuntimeException("Writing classifier model", e);
-        } finally {
-            if (oos != null)
-                try {
-                    oos.close();
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-        }
+        ArrayList<BoostClassifier> clList = new ArrayList<>();
+        clList.add(classifier);
+        JavaRDD<BoostClassifier> rdd = sc.parallelize(clList);
+        rdd.saveAsObjectFile(outputModelPath);
     }
 
-    public static BoostClassifier loadModel(String inputFile) {
-        if (inputFile == null)
-            throw new NullPointerException("The output file is 'null'");
-        ObjectInputStream ois = null;
-        try {
-            InputStream fis = new BufferedInputStream(new FileInputStream(inputFile));
-            ois = new ObjectInputStream(fis);
-            return (BoostClassifier) ois.readObject();
-        } catch (Exception e) {
-            throw new RuntimeException("Reading classifier model", e);
-        } finally {
-            if (ois != null) {
-                try {
-                    ois.close();
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        }
+    /**
+     * Load a boosting classifier model  from the specified input model path (any valid path recognized by
+     * Spark/Hadoop).
+     *
+     * @param sc             The Spark context.
+     * @param inputModelPath The input model path.
+     * @return The corresponding boosting classifier.
+     */
+    public static BoostClassifier loadModel(JavaSparkContext sc, String inputModelPath) {
+        if (sc == null)
+            throw new NullPointerException("The Spark context is 'null'");
+        if (inputModelPath == null)
+            throw new NullPointerException("The input model path is 'null'");
+
+        BoostClassifier cl = (BoostClassifier) sc.objectFile(inputModelPath).take(1).get(0);
+        return cl;
     }
 
     public static class LabelDocuments implements Serializable {
