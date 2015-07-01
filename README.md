@@ -24,9 +24,9 @@ To use the latest release of this software in your projects, in your project POM
 then in the dependencies list add
 ```
 <dependency>
-    <groupId>it.tizianofagni</groupId>
+    <groupId>tizfa</groupId>
     <artifactId>sparkboost</artifactId>
-    <version>0.5</version>
+    <version>0.6</version>
 </dependency>
 ```
 
@@ -48,21 +48,21 @@ This set of commands will build a software bundle containing all the necessary S
 #### Building a MP-Boost classifier
 To build a MP-Boost classifier for a specific dataset file `path/to/datasetFile` (in the format libsvm), launch this command from prompt:
 ```
-java -cp ./target/sparkboost-0.5-bundle.jar it.tizianofagni.sparkboost.MPBoostLearnerExe path/to/datasetfile path/to/modelOutput numIterations sparkMasterName parallelismDegree
+java -cp ./target/sparkboost-0.6-bundle.jar it.tizianofagni.sparkboost.MPBoostLearnerExe path/to/datasetfile path/to/modelOutput numIterations sparkMasterName parallelismDegree
 ```
 where `path/to/modelOutput` is the output file where the generated classifier will be save, `numIterations` is the number of iterations used in the algorithm, `sparkMasterName` is the name of Spark master host (or local[*] for executing the process locally on your machine) and `parallelismDegree` is the number of processing units to use while executing the algorithm.
 
 #### Building an AdaBoost.MH classifier
 To build a AdaBoost.MH classifier for a specific dataset file `path/to/datasetFile` (in the format libsvm), launch this command from prompt:
 ```
-java -cp ./target/sparkboost-0.5-bundle.jar it.tizianofagni.sparkboost.AdaBoostMHLearnerExe path/to/datasetfile path/to/modelOutput numIterations sparkMasterName parallelismDegree
+java -cp ./target/sparkboost-0.6-bundle.jar it.tizianofagni.sparkboost.AdaBoostMHLearnerExe path/to/datasetfile path/to/modelOutput numIterations sparkMasterName parallelismDegree
 ```
 where `path/to/modelOutput` is the output file where the generated classifier will be save, `numIterations` is the number of iterations used in the algorithm, `sparkMasterName` is the name of Spark master host (or local[*] for executing the process locally on your machine) and `parallelismDegree` is the number of processing units to use while executing the algorithm.
 
 #### Using a classifier
 To use an already built classifier over a test dataset (it does not matter if the model has been built with MP-Boost or AdaBoost.MH learner, they share the same forrmat for classification models!), use this command:
 ```
-java -cp ./target/sparkboost-0.5-bundle.jar it.tizianofagni.sparkboost.BoostClassifierExe datasetfile classifierModel outputResultsFile sparkMasterName parallelismDegree
+java -cp ./target/sparkboost-0.6-bundle.jar it.tizianofagni.sparkboost.BoostClassifierExe datasetfile classifierModel outputResultsFile sparkMasterName parallelismDegree
 ```
 where `datasetFile` is the input file containing the dataset test examples, `classifierModel` is the file containing a previous generated classifier, `outputResultsFile` is the ouput file containing classification results, `sparkMasterName` is the name of Spark master host (or local[*] for executing the process locally on your machine) and `parallelismDegree` is the number of processing units to use while executing the algorithm.
 
@@ -152,7 +152,7 @@ for (int i = 0; i < results.getNumDocs(); i++) {
 ```
 
 ## Software compilation for latest snapshot
-If you are interested in using the latest snapshot of the software, you need to have [Maven](https://maven.apache.org/) and a Java 8 compiler installed on your machine. Download a copy of this software repository on your machine on a specific folder, go inside that folder, switch to branch 'develop' and at the command prompt put the following commands:
+If you are interested in using the latest snapshot of the software, you need to have [Maven](https://maven.apache.org/) and a Java 8 compiler installed on your machine. Download a copy of this software repository from 'develop' branch onto your machine on a specific folder, go inside that folder and at the command prompt put the following commands:
 ```
 mvn clean
 mvn -P devel package
