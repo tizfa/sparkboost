@@ -120,7 +120,7 @@ JavaRDD<MultilabelPoint> trainingData = ...
 // Build a new classifier.
 BoostClassifier classifier = learner.buildModel(trainingData);
 
-// Save classifier in outputModelPath using the any valid syntax allowed by Spark/Hadoop.
+// Save classifier in outputModelPath using any valid syntax allowed by Spark/Hadoop.
 DataUtils.saveModel(sc, classifier, outputModelPath);
 ```
 
