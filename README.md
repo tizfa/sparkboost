@@ -38,7 +38,7 @@ if the labels IDs are 0-based or 1-based, i.e. if the number of valid labels is 
 if the labels are 0-based, the user can use the flag `-z` in the available commands.
 
 #### Software compilation to use command line tools
-If you are interested to use the command line tools available with the software, you need to download the latest release sources available from [here](https://github.com/tizfa/sparkboost/archive/master.zip) and the compile them. To perform this task, you need [Maven](https://maven.apache.org/) and a Java 8 compiler installed on your machine. Download a copy of this software repository on your machine on a specific folder, go inside that folder and at the command prompt put the following commands:
+If you are interested to use the command line tools available with the software, you need to download the latest release sources available from [here](https://github.com/tizfa/sparkboost/archive/master.zip) and next compile them. To perform this task, you need [Maven](https://maven.apache.org/) and a Java 8 compiler installed on your machine. Download a copy of this software repository on your machine on a specific folder, go inside that folder and at the command prompt put the following commands:
 ```
 mvn clean
 mvn -P shading package
@@ -84,8 +84,8 @@ We built a MP-Boost classification model using 500 iterations and using a single
 Precision: 0.8331455753966425, Recall: 0.6987996337970667, F1:0.7600817829421506
 
 ### Using library API to build your own programs
-An example of using the API is given by the provided command line tools. Just watch the source code of classes AdaBoostMHLearnerExe.java, MPBoostLearnerExe.java and BoostClassifierExe.java.
-Briefly to build a classifier you can use a code like this:
+An example of using the API is given by the provided command line tools. Just watch the source code of classes [AdaBoostMHLearnerExe.java](src/main/java/it/tizianofagni/sparkboost/AdaBoostMHLearnerExe.java), [MPBoostLearnerExe.java](src/main/java/it/tizianofagni/sparkboost/MPBoostLearnerExe.java) and [BoostClassifierExe.java](src/main/java/it/tizianofagni/sparkboost/BoostClassifierExe.java).
+Briefly, to build a classifier you can use a code like this:
 ```java
 JavaSparkContext sc = ... // Spark context to use;
 

@@ -31,7 +31,7 @@ import java.util.Iterator;
 /**
  * A Spark implementation of MP-Boost algorithm, an improved variant of the
  * well known AdaBoost.MH boosting algorithm.<br/><br/>
- * The original article describing the algorithm can be found at
+ * The original article describing MP-Boost algorithm can be found at
  * <a href="http://link.springer.com/chapter/10.1007/11880561_1">http://link.springer.com/chapter/10.1007/11880561_1</a>.
  *
  * @author Tiziano Fagni (tiziano.fagni@isti.cnr.it)
