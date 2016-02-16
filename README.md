@@ -38,7 +38,7 @@ if the labels IDs are 0-based or 1-based, i.e. if the number of valid labels is 
 if the labels are 0-based, the user can use the flag `-z` in the available commands.
 
 #### Software compilation to use command line tools
-If you are interested to use the command line tools available with the software, you need to download the latest release sources available from [here] and the compile them. To perform this task, you need (https://github.com/tizfa/sparkboost/archive/master.zip)  [Maven](https://maven.apache.org/) and a Java 8 compiler installed on your machine. Download a copy of this software repository on your machine on a specific folder, go inside that folder and at the command prompt put the following commands:
+If you are interested to use the command line tools available with the software, you need to download the latest release sources available from [here](https://github.com/tizfa/sparkboost/archive/master.zip) and the compile them. To perform this task, you need [Maven](https://maven.apache.org/) and a Java 8 compiler installed on your machine. Download a copy of this software repository on your machine on a specific folder, go inside that folder and at the command prompt put the following commands:
 ```
 mvn clean
 mvn -P shading package
@@ -120,7 +120,7 @@ JavaRDD<MultilabelPoint> trainingData = ...
 // Build a new classifier.
 BoostClassifier classifier = learner.buildModel(trainingData);
 
-// Save classifier in outputModelPath using the any valid syntax allowed by Spark/Hadoop.
+// Save classifier in outputModelPath using any valid syntax allowed by Spark/Hadoop.
 DataUtils.saveModel(sc, classifier, outputModelPath);
 ```
 
