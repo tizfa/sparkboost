@@ -1,7 +1,9 @@
 /*
  *
  * ****************
- * Copyright 2015 Tiziano Fagni (tiziano.fagni@isti.cnr.it)
+ * This file is part of nlp4sparkml software package (https://github.com/tizfa/nlp4sparkml).
+ *
+ * Copyright 2016 Tiziano Fagni (tiziano.fagni@isti.cnr.it)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +41,8 @@ public class MPBoostLearnerExe {
         options.addOption(opt);
         opt = Option.builder("w").longOpt("windowsLocalModeFix").hasArg().desc("Set the directory containing the winutils.exe command").build();
         options.addOption(opt);
+        opt = Option.builder("j").longOpt("bundleJar").hasArg().desc("Set the bundle jat containing all application code").build();
+        options.addOption(opt);
 
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd = null;
@@ -69,6 +73,11 @@ public class MPBoostLearnerExe {
             System.setProperty("hadoop.home.dir", cmd.getOptionValue("w"));
         }
 
+        String[] jars = {};
+        if (cmd.hasOption("j")) {
+            jars[0] = cmd.getOptionValue("j");
+        }
+
         String inputFile = remainingArgs[0];
         String outputFile = remainingArgs[1];
         int numIterations = Integer.parseInt(remainingArgs[2]);
@@ -87,6 +96,8 @@ public class MPBoostLearnerExe {
         SparkConf conf = new SparkConf().setAppName("Spark MPBoost learner");
         conf.setMaster(sparkMaster);
         conf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer");
+        if (jars.length != 0)
+            conf.setJars(jars);
         JavaSparkContext sc = new JavaSparkContext(conf);
 
         // Create and configure learner.
