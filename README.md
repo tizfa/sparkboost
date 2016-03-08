@@ -81,7 +81,7 @@ We used the following files for this experimentation:
 * rcv1_topics_test_0.svm.bz2 for testing (199328 documents)
 
 We built a MP-Boost classification model using 500 iterations and using a single multicore machine (AMD Fx-8350 8-cores). The training time to build a classification model for all 101 labels and by specifying a parallelismDegree of 8 has been of 1206 seconds. The classification time has been of 61 seconds to classify all 199328 documents. Here are the main results we have obtained in this specific configuration:
-Precision: 0.8331455753966425, Recall: 0.6987996337970667, F1:0.7600817829421506
+Precision: 0.833, Recall: 0.699, F1:0.760
 
 ### Using library API to build your own programs
 An example of using the API is given by the provided command line tools. Just watch the source code of classes [AdaBoostMHLearnerExe.java](src/main/java/it/tizianofagni/sparkboost/AdaBoostMHLearnerExe.java), [MPBoostLearnerExe.java](src/main/java/it/tizianofagni/sparkboost/MPBoostLearnerExe.java) and [BoostClassifierExe.java](src/main/java/it/tizianofagni/sparkboost/BoostClassifierExe.java).
