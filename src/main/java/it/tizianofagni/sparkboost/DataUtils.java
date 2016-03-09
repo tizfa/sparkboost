@@ -1,7 +1,9 @@
 /*
  *
  * ****************
- * Copyright 2015 Tiziano Fagni (tiziano.fagni@isti.cnr.it)
+ * This file is part of nlp4sparkml software package (https://github.com/tizfa/nlp4sparkml).
+ *
+ * Copyright 2016 Tiziano Fagni (tiziano.fagni@isti.cnr.it)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -334,7 +336,8 @@ public class DataUtils {
         if (inputModelPath == null)
             throw new NullPointerException("The input model path is 'null'");
 
-        BoostClassifier cl = (BoostClassifier) sc.objectFile(inputModelPath).take(1).get(0);
+        List classifiers = sc.objectFile(inputModelPath).collect();
+        BoostClassifier cl = (BoostClassifier) classifiers.get(0);
         return cl;
     }
 
