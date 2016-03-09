@@ -61,6 +61,27 @@
  * ******************
  */
 
+/*
+ *
+ * ****************
+ * This file is part of nlp4sparkml software package (https://github.com/tizfa/nlp4sparkml).
+ *
+ * Copyright 2016 Tiziano Fagni (tiziano.fagni@isti.cnr.it)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ******************
+ */
+
 package it.tizianofagni.sparkboost;
 
 import org.apache.commons.cli.*;
@@ -87,6 +108,8 @@ public class BoostClassifierExe {
         opt = Option.builder("l").longOpt("enableSparkLogging").desc("Enable logging messages of Spark").build();
         options.addOption(opt);
         opt = Option.builder("w").longOpt("windowsLocalModeFix").hasArg().desc("Set the directory containing the winutils.exe command").build();
+        options.addOption(opt);
+        opt = Option.builder("j").longOpt("bundleJar").hasArg().desc("Set the bundle jat containing all application code").build();
         options.addOption(opt);
 
         CommandLineParser parser = new DefaultParser();
@@ -118,6 +141,11 @@ public class BoostClassifierExe {
             System.setProperty("hadoop.home.dir", cmd.getOptionValue("w"));
         }
 
+        String[] jars = {};
+        if (cmd.hasOption("j")) {
+            jars = new String[]{cmd.getOptionValue("j")};
+        }
+
         String inputFile = remainingArgs[0];
         String inputModel = remainingArgs[1];
         String outputFile = remainingArgs[2];
@@ -136,9 +164,11 @@ public class BoostClassifierExe {
         // Create and configure Spark context.
         SparkConf conf = new SparkConf().setAppName("Spark MPBoost classifier");
         conf.setMaster(sparkMaster);
+        conf.set("spark.executor.memory", "15g");
+        if (jars.length != 0)
+            conf.setJars(jars);
         JavaSparkContext sc = new JavaSparkContext(conf);
         //conf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer");
-        conf.set("spark.executor.memory", "15g");
 
         // Load boosting classifier from disk.
         BoostClassifier classifier = DataUtils.loadModel(sc, inputModel);
