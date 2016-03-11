@@ -1,7 +1,9 @@
 /*
  *
  * ****************
- * Copyright 2015 Tiziano Fagni (tiziano.fagni@isti.cnr.it)
+ * This file is part of nlp4sparkml software package (https://github.com/tizfa/nlp4sparkml).
+ *
+ * Copyright 2016 Tiziano Fagni (tiziano.fagni@isti.cnr.it)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -86,24 +88,24 @@ public class MpBoostLearner {
     public BoostClassifier buildModel(JavaRDD<MultilabelPoint> docs) {
         if (docs == null)
             throw new NullPointerException("The set of training documents is 'null'");
-        if (docs.partitions().size() < getParallelismDegree()) {
+        /*if (docs.partitions().size() < getParallelismDegree()) {
             docs = docs.repartition(getParallelismDegree());
-        }
+        }*/
 
         Logging.l().info("Load initial data and generating internal data representations...");
         docs = docs.persist(StorageLevel.MEMORY_AND_DISK_SER());
         int numDocs = DataUtils.getNumDocuments(docs);
         int numLabels = DataUtils.getNumLabels(docs);
         JavaRDD<DataUtils.LabelDocuments> labelDocuments = DataUtils.getLabelDocuments(docs);
-        if (labelDocuments.partitions().size() < getParallelismDegree()) {
+        /*if (labelDocuments.partitions().size() < getParallelismDegree()) {
             labelDocuments = labelDocuments.repartition(getParallelismDegree());
-        }
+        }*/
         labelDocuments = labelDocuments.persist(StorageLevel.MEMORY_AND_DISK_SER());
 
         JavaRDD<DataUtils.FeatureDocuments> featureDocuments = DataUtils.getFeatureDocuments(docs);
-        if (featureDocuments.partitions().size() < getParallelismDegree()) {
+        /*if (featureDocuments.partitions().size() < getParallelismDegree()) {
             featureDocuments = featureDocuments.repartition(getParallelismDegree());
-        }
+        }*/
         featureDocuments = featureDocuments.persist(StorageLevel.MEMORY_AND_DISK_SER());
 
 

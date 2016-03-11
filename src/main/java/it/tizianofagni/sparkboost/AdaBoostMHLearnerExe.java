@@ -1,7 +1,9 @@
 /*
  *
  * ****************
- * Copyright 2015 Tiziano Fagni (tiziano.fagni@isti.cnr.it)
+ * This file is part of nlp4sparkml software package (https://github.com/tizfa/nlp4sparkml).
+ *
+ * Copyright 2016 Tiziano Fagni (tiziano.fagni@isti.cnr.it)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,16 +33,12 @@ import org.apache.spark.api.java.JavaSparkContext;
 public class AdaBoostMHLearnerExe {
     public static void main(String[] args) {
         Options options = new Options();
-        Option opt = Option.builder("b").longOpt("binaryProblem").desc("Indicate if the input dataset contains a binary problem and not a multilabel one").build();
-        options.addOption(opt);
-        opt = Option.builder("z").longOpt("labels0Based").desc("Indicate if the labels IDs in the dataset to classify are already assigned in the range [0, numLabels-1] included").build();
-        options.addOption(opt);
-        opt = Option.builder("l").longOpt("enableSparkLogging").desc("Enable logging messages of Spark").build();
-        options.addOption(opt);
-        opt = Option.builder("w").longOpt("windowsLocalModeFix").hasArg().desc("Set the directory containing the winutils.exe command").build();
-        options.addOption(opt);
+        options.addOption("b", "binaryProblem", false, "Indicate if the input dataset contains a binary problem and not a multilabel one");
+        options.addOption("z", "labels0based", false, "Indicate if the labels IDs in the dataset to classify are already assigned in the range [0, numLabels-1] included");
+        options.addOption("l", "enableSparkLogging", false, "Enable logging messages of Spark");
+        options.addOption("w", "windowsLocalModeFix", true, "Set the directory containing the winutils.exe command");
 
-        CommandLineParser parser = new DefaultParser();
+        CommandLineParser parser = new BasicParser();
         CommandLine cmd = null;
         String[] remainingArgs = null;
         try {
