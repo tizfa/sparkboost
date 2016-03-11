@@ -19,6 +19,27 @@
  * ******************
  */
 
+/*
+ *
+ * ****************
+ * This file is part of nlp4sparkml software package (https://github.com/tizfa/nlp4sparkml).
+ *
+ * Copyright 2016 Tiziano Fagni (tiziano.fagni@isti.cnr.it)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ******************
+ */
+
 package it.tizianofagni.sparkboost;
 
 import org.apache.spark.api.java.JavaRDD;
@@ -46,37 +67,101 @@ public class MpBoostLearner {
      */
     private int numIterations;
 
+
     /**
-     * The number of workers to use while analyzing the data.
+     * The maximum number of documents for each partition while analyzing
+     * an RDD of type {@link JavaRDD<MultilabelPoint>}.
      */
-    private int parallelismDegree;
+    private int numDocumentsInPartitions;
+
+    /**
+     * The maximum number of features for each partition while analyzing
+     * an RDD of type {@link JavaRDD<DataUtils.FeatureDocuments>}
+     */
+    private int numFeaturesInPartitions;
+
+    /**
+     * The maximum number of labels for each partition while analyzing
+     * an RDD of type {@link JavaRDD<DataUtils.LabelDocuments>}
+     */
+    private int numLabelsInPartitions;
 
     public MpBoostLearner(JavaSparkContext sc) {
         if (sc == null)
             throw new NullPointerException("The SparkContext is 'null'");
         this.sc = sc;
-        this.parallelismDegree = 8;
         this.numIterations = 200;
-    }
-
-    /**
-     * Get the number of workers used while building a new classifier.
-     *
-     * @return The number of workers used while building a new classifier.
-     */
-    public int getParallelismDegree() {
-        return parallelismDegree;
+        this.numDocumentsInPartitions = 500;
+        this.numFeaturesInPartitions = 5000;
+        this.numLabelsInPartitions = 20;
     }
 
 
     /**
-     * Set the number of workers used while building a new classifier.
+     * Get the maximum number of documents for each partition while analyzing
+     * an RDD of type {@link JavaRDD<MultilabelPoint>}.
      *
-     * @param parallelismDegree The number of workers to use.
+     * @return The maximum number of documents for each partition while analyzing
+     * an RDD of type {@link JavaRDD<MultilabelPoint>}.
      */
-    public void setParallelismDegree(int parallelismDegree) {
-        this.parallelismDegree = parallelismDegree;
+    public int getNumDocumentsInPartitions() {
+        return numDocumentsInPartitions;
     }
+
+    /**
+     * Set the maximum number of documents for each partition while analyzing
+     * an RDD of type {@link JavaRDD<MultilabelPoint>}.
+     *
+     * @param numDocumentsInPartitions The maximum number od documents in a single partition.
+     */
+    public void setNumDocumentsInPartitions(int numDocumentsInPartitions) {
+        this.numDocumentsInPartitions = numDocumentsInPartitions;
+    }
+
+
+    /**
+     * Get the maximum number of features for each partition while analyzing
+     * an RDD of type {@link JavaRDD<DataUtils.FeatureDocuments>}.
+     *
+     * @return The maximum number of features for each partition while analyzing
+     * an RDD of type {@link JavaRDD<DataUtils.FeatureDocuments>}
+     */
+    public int getNumFeaturesInPartitions() {
+        return numFeaturesInPartitions;
+    }
+
+    /**
+     * Set the maximum number of features for each partition while analyzing
+     * an RDD of type {@link JavaRDD<DataUtils.FeatureDocuments>}.
+     *
+     * @param numFeaturesInPartitions The maximum number of features in a single partition.
+     */
+    public void setNumFeaturesInPartitions(int numFeaturesInPartitions) {
+        this.numFeaturesInPartitions = numFeaturesInPartitions;
+    }
+
+
+    /**
+     * Get the maximum number of labels for each partition while analyzing
+     * an RDD of type {@link JavaRDD<DataUtils.LabelDocuments>}.
+     *
+     * @return The maximum number of labels for each partition while analyzing
+     * an RDD of type {@link JavaRDD<DataUtils.LabelDocuments>}.
+     */
+    public int getNumLabelsInPartitions() {
+        return numLabelsInPartitions;
+    }
+
+    /**
+     * Set the maximum number of labels for each partition while analyzing
+     * an RDD of type {@link JavaRDD<DataUtils.LabelDocuments>}.
+     *
+     * @param numLabelsInPartitions The maximum number of labels in a single partition.
+     */
+    public void setNumLabelsInPartitions(int numLabelsInPartitions) {
+        this.numLabelsInPartitions = numLabelsInPartitions;
+    }
+
 
     /**
      * Build a new classifier by analyzing the training data available in the
@@ -88,24 +173,33 @@ public class MpBoostLearner {
     public BoostClassifier buildModel(JavaRDD<MultilabelPoint> docs) {
         if (docs == null)
             throw new NullPointerException("The set of training documents is 'null'");
-        /*if (docs.partitions().size() < getParallelismDegree()) {
-            docs = docs.repartition(getParallelismDegree());
-        }*/
+
+        // Repartition documents.
+        long numTotal = docs.count();
+        long numWantedPartitions = numTotal / getNumDocumentsInPartitions();
+        numWantedPartitions = numTotal % getNumDocumentsInPartitions() != 0 ? numWantedPartitions + 1 : numWantedPartitions;
+        docs = docs.repartition((int) numWantedPartitions);
+
 
         Logging.l().info("Load initial data and generating internal data representations...");
         docs = docs.persist(StorageLevel.MEMORY_AND_DISK_SER());
         int numDocs = DataUtils.getNumDocuments(docs);
         int numLabels = DataUtils.getNumLabels(docs);
         JavaRDD<DataUtils.LabelDocuments> labelDocuments = DataUtils.getLabelDocuments(docs);
-        /*if (labelDocuments.partitions().size() < getParallelismDegree()) {
-            labelDocuments = labelDocuments.repartition(getParallelismDegree());
-        }*/
+
+        // Repartition labels.
+        numTotal = labelDocuments.count();
+        numWantedPartitions = numTotal / getNumLabelsInPartitions();
+        numWantedPartitions = numTotal % getNumLabelsInPartitions() != 0 ? numWantedPartitions + 1 : numWantedPartitions;
+        labelDocuments = labelDocuments.repartition((int) numWantedPartitions);
         labelDocuments = labelDocuments.persist(StorageLevel.MEMORY_AND_DISK_SER());
 
+        // Repartition features.
         JavaRDD<DataUtils.FeatureDocuments> featureDocuments = DataUtils.getFeatureDocuments(docs);
-        /*if (featureDocuments.partitions().size() < getParallelismDegree()) {
-            featureDocuments = featureDocuments.repartition(getParallelismDegree());
-        }*/
+        numTotal = featureDocuments.count();
+        numWantedPartitions = numTotal / getNumFeaturesInPartitions();
+        numWantedPartitions = numTotal % getNumFeaturesInPartitions() != 0 ? numWantedPartitions + 1 : numWantedPartitions;
+        featureDocuments = featureDocuments.repartition((int) numWantedPartitions);
         featureDocuments = featureDocuments.persist(StorageLevel.MEMORY_AND_DISK_SER());
 
 
