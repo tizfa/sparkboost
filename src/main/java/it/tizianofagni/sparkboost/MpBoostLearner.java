@@ -124,6 +124,27 @@
  * ******************
  */
 
+/*
+ *
+ * ****************
+ * This file is part of nlp4sparkml software package (https://github.com/tizfa/nlp4sparkml).
+ *
+ * Copyright 2016 Tiziano Fagni (tiziano.fagni@isti.cnr.it)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ******************
+ */
+
 package it.tizianofagni.sparkboost;
 
 import org.apache.spark.api.java.JavaRDD;
@@ -264,7 +285,7 @@ public class MpBoostLearner {
 //        numWantedPartitions = numTotal % getNumDocumentsInPartitions() != 0 ? numWantedPartitions + 1 : numWantedPartitions;
 //        docs = docs.repartition((int) numWantedPartitions);
         Logging.l().info("Load initial data and generating internal data representations...");
-        docs = docs.repartition(sc.defaultParallelism());
+        docs = docs.repartition(sc.defaultParallelism() * 3);
         docs = docs.persist(StorageLevel.MEMORY_AND_DISK_SER());
         Logging.l().info("Docs: num partitions " + docs.partitions().size());
 
@@ -277,7 +298,7 @@ public class MpBoostLearner {
 //        numWantedPartitions = numTotal / getNumLabelsInPartitions();
 //        numWantedPartitions = numTotal % getNumLabelsInPartitions() != 0 ? numWantedPartitions + 1 : numWantedPartitions;
 //        labelDocuments = labelDocuments.repartition((int) numWantedPartitions);
-        labelDocuments = labelDocuments.repartition(sc.defaultParallelism());
+        labelDocuments = labelDocuments.repartition(sc.defaultParallelism() * 3);
         labelDocuments = labelDocuments.persist(StorageLevel.MEMORY_AND_DISK_SER());
         Logging.l().info("Labels: num partitions " + labelDocuments.partitions().size());
 
@@ -287,7 +308,7 @@ public class MpBoostLearner {
 //        numWantedPartitions = numTotal / getNumFeaturesInPartitions();
 //        numWantedPartitions = numTotal % getNumFeaturesInPartitions() != 0 ? numWantedPartitions + 1 : numWantedPartitions;
 //        featureDocuments = featureDocuments.repartition((int) numWantedPartitions);
-        featureDocuments = featureDocuments.repartition(sc.defaultParallelism());
+        featureDocuments = featureDocuments.repartition(sc.defaultParallelism() * 3);
         featureDocuments = featureDocuments.persist(StorageLevel.MEMORY_AND_DISK_SER());
         Logging.l().info("Features: num partitions " + featureDocuments.partitions().size());
 
