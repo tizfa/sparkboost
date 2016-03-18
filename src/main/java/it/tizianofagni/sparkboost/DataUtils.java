@@ -130,14 +130,15 @@ public class DataUtils {
      *
      * @param sc       The spark context.
      * @param dataFile The data file.
+     * @param minNumPartitions The minimum number of partitions to split data in "dataFile".
      * @return An RDD containing the read points.
      */
-    public static JavaRDD<MultilabelPoint> loadLibSvmFileFormatData(JavaSparkContext sc, String dataFile, boolean labels0Based, boolean binaryProblem) {
+    public static JavaRDD<MultilabelPoint> loadLibSvmFileFormatData(JavaSparkContext sc, String dataFile, boolean labels0Based, boolean binaryProblem, int minNumPartitions) {
         if (sc == null)
             throw new NullPointerException("The Spark Context is 'null'");
         if (dataFile == null || dataFile.isEmpty())
             throw new IllegalArgumentException("The dataFile is 'null'");
-        JavaRDD<String> lines = sc.textFile(dataFile).cache();
+        JavaRDD<String> lines = sc.textFile(dataFile, minNumPartitions).cache();
         int localNumFeatures = computeNumFeatures(lines);
         Broadcast<Integer> distNumFeatures = sc.broadcast(localNumFeatures);
         JavaRDD<MultilabelPoint> docs = lines.filter(line -> !line.isEmpty()).zipWithIndex().map(item -> {

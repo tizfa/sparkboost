@@ -48,6 +48,12 @@ public class MpBoostLearner {
 
 
     /**
+     * The default minimum number of partitions,.
+     */
+    private int minNumPartitions;
+
+
+    /**
      * The number of partitions while analyzing
      * an RDD of type {@link JavaRDD<MultilabelPoint>}.
      */
@@ -73,8 +79,16 @@ public class MpBoostLearner {
         this.numDocumentsPartitions = -1;
         this.numFeaturesPartitions = -1;
         this.numLabelsPartitions = -1;
+        this.minNumPartitions = 8;
     }
 
+    public int getMinNumPartitions() {
+        return minNumPartitions;
+    }
+
+    public void setMinNumPartitions(int minNumPartitions) {
+        this.minNumPartitions = minNumPartitions;
+    }
 
     /**
      * Get the number of partitions while analyzing
@@ -214,7 +228,7 @@ public class MpBoostLearner {
         if (libSvmFile == null || libSvmFile.isEmpty())
             throw new IllegalArgumentException("The input file is 'null' or empty");
 
-        JavaRDD<MultilabelPoint> docs = DataUtils.loadLibSvmFileFormatData(sc, libSvmFile, labels0Based, binaryProblem);
+        JavaRDD<MultilabelPoint> docs = DataUtils.loadLibSvmFileFormatData(sc, libSvmFile, labels0Based, binaryProblem, minNumPartitions);
         if (this.numDocumentsPartitions == -1)
             this.numDocumentsPartitions = sc.defaultParallelism();
         if (this.numFeaturesPartitions == -1)

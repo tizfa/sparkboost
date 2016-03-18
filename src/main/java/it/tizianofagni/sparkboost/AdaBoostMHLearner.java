@@ -144,7 +144,7 @@ public class AdaBoostMHLearner {
         if (libSvmFile == null || libSvmFile.isEmpty())
             throw new IllegalArgumentException("The input file is 'null' or empty");
 
-        JavaRDD<MultilabelPoint> docs = DataUtils.loadLibSvmFileFormatData(sc, libSvmFile, labels0Based, binaryProblem);
+        JavaRDD<MultilabelPoint> docs = DataUtils.loadLibSvmFileFormatData(sc, libSvmFile, labels0Based, binaryProblem, 8);
         return buildModel(docs);
     }
 
