@@ -37,6 +37,9 @@ public class MPBoostLearnerExe {
         options.addOption("z", "labels0based", false, "Indicate if the labels IDs in the dataset to classify are already assigned in the range [0, numLabels-1] included");
         options.addOption("l", "enableSparkLogging", false, "Enable logging messages of Spark");
         options.addOption("w", "windowsLocalModeFix", true, "Set the directory containing the winutils.exe command");
+        options.addOption("dp", "documentPartitions", true, "The number of document partitions");
+        options.addOption("fp", "featurePartitions", true, "The number of feature partitions");
+        options.addOption("lp", "labelPartitions", true, "The number of label partitions");
 
         CommandLineParser parser = new BasicParser();
         CommandLine cmd = null;
@@ -88,6 +91,16 @@ public class MPBoostLearnerExe {
         // Create and configure learner.
         MpBoostLearner learner = new MpBoostLearner(sc);
         learner.setNumIterations(numIterations);
+
+        if (cmd.hasOption("dp")) {
+            learner.setNumDocumentsPartitions(Integer.parseInt(cmd.getOptionValue("dp")));
+        }
+        if (cmd.hasOption("fp")) {
+            learner.setNumFeaturesPartitions(Integer.parseInt(cmd.getOptionValue("fp")));
+        }
+        if (cmd.hasOption("lp")) {
+            learner.setNumLabelsPartitions(Integer.parseInt(cmd.getOptionValue("lp")));
+        }
 
 
         // Build classifier with MPBoost learner.
