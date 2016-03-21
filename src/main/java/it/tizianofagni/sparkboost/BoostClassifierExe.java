@@ -22,13 +22,11 @@
 package it.tizianofagni.sparkboost;
 
 import org.apache.commons.cli.*;
-import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaSparkContext;
 
-import java.io.File;
 import java.util.Arrays;
 
 /**
@@ -114,8 +112,7 @@ public class BoostClassifierExe {
             sb.append("DocID: " + docID + ", Labels assigned: " + Arrays.toString(labels) + ", Labels scores: " + Arrays.toString(results.getScores()[i]) + ", Gold labels: " + Arrays.toString(goldLabels) + "\n");
         }
         try {
-            new File(outputFile).getParentFile().mkdirs();
-            FileUtils.writeStringToFile(new File(outputFile), sb.toString());
+            DataUtils.saveHadoopTextFile(outputFile, sb.toString());
         } catch (Exception e) {
             throw new RuntimeException("Writing classisfication results", e);
         }

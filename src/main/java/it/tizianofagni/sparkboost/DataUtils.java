@@ -33,9 +33,7 @@ import org.apache.spark.mllib.linalg.SparseVector;
 import org.apache.spark.mllib.linalg.Vectors;
 import scala.Tuple2;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.Serializable;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -45,6 +43,33 @@ import java.util.List;
  * @author Tiziano Fagni (tiziano.fagni@isti.cnr.it)
  */
 public class DataUtils {
+
+
+    /**
+     * Write a text file on Hadoop file system by using standard Hadoop API.
+     *
+     * @param outputPath The file to be written.
+     * @param content    The content to put in the file.
+     */
+    public static void saveHadoopTextFile(String outputPath, String content) {
+        try {
+            Configuration configuration = new Configuration();
+            Path file = new Path(outputPath);
+            Path parentFile = file.getParent();
+            FileSystem hdfs = FileSystem.get(file.toUri(), configuration);
+            if (parentFile != null)
+                hdfs.mkdirs(parentFile);
+            OutputStream os = hdfs.create(file, true);
+            BufferedWriter br = new BufferedWriter(new OutputStreamWriter(os, "UTF-8"));
+            br.write(content);
+            br.close();
+            hdfs.close();
+        } catch (Exception e) {
+            throw new RuntimeException("Writing Hadoop text file", e);
+        }
+    }
+
+
 
     /**
      * Load data file in LibSVm format. The documents IDs are assigned according to the row index in the original
