@@ -42,6 +42,7 @@ public class BoostClassifierExe {
         options.addOption("z", "labels0based", false, "Indicate if the labels IDs in the dataset to classify are already assigned in the range [0, numLabels-1] included");
         options.addOption("l", "enableSparkLogging", false, "Enable logging messages of Spark");
         options.addOption("w", "windowsLocalModeFix", true, "Set the directory containing the winutils.exe command");
+        options.addOption("p", "parallelismDegree", true, "Set the parallelism degree (default: number of available cores in the Spark runtime");
 
         CommandLineParser parser = new BasicParser();
         CommandLine cmd = null;
@@ -75,8 +76,6 @@ public class BoostClassifierExe {
         String inputFile = remainingArgs[0];
         String inputModel = remainingArgs[1];
         String outputFile = remainingArgs[2];
-        String sparkMaster = remainingArgs[3];
-        int parallelismDegree = Integer.parseInt(remainingArgs[4]);
 
 
         long startTime = System.currentTimeMillis();
@@ -93,6 +92,12 @@ public class BoostClassifierExe {
 
         // Load boosting classifier from disk.
         BoostClassifier classifier = DataUtils.loadModel(sc, inputModel);
+
+        // Get the parallelism degree.
+        int parallelismDegree = sc.defaultParallelism();
+        if (cmd.hasOption("p")) {
+            parallelismDegree = Integer.parseInt(cmd.getOptionValue("p"));
+        }
 
         // Classify documents contained in "inputFile", a file in libsvm format.
         ClassificationResults results = classifier.classify(sc, inputFile, parallelismDegree, labels0Based, binaryProblem);
