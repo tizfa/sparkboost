@@ -23,6 +23,9 @@ package it.tizianofagni.sparkboost;
 
 
 import org.apache.commons.lang.ArrayUtils;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.broadcast.Broadcast;
@@ -31,7 +34,7 @@ import org.apache.spark.mllib.linalg.Vectors;
 import scala.Tuple2;
 
 import java.io.BufferedReader;
-import java.io.FileReader;
+import java.io.InputStreamReader;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -61,9 +64,14 @@ public class DataUtils {
         JavaRDD<String> lines = sc.textFile(dataFile).cache();
         int numFeatures = computeNumFeatures(lines);
 
+
         ArrayList<MultilabelPoint> points = new ArrayList<>();
         try {
-            BufferedReader br = new BufferedReader(new FileReader(dataFile));
+            Path pt = new Path(dataFile);
+            FileSystem fs = FileSystem.get(new Configuration());
+            BufferedReader br = new BufferedReader(new InputStreamReader(fs.open(pt)));
+
+            //BufferedReader br = new BufferedReader(new FileReader(dataFile));
 
             try {
                 int docID = 0;
