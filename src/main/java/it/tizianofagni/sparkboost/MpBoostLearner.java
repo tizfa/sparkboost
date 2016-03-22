@@ -21,12 +21,15 @@
 
 package it.tizianofagni.sparkboost;
 
+import org.apache.spark.Accumulable;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.storage.StorageLevel;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 
@@ -242,6 +245,64 @@ public class MpBoostLearner {
     protected void updateDistributionMatrix(JavaSparkContext sc, JavaRDD<MultilabelPoint> docs, double[][] localDM, WeakHypothesis localWH) {
         Broadcast<WeakHypothesis> distWH = sc.broadcast(localWH);
         Broadcast<double[][]> distDM = sc.broadcast(localDM);
+
+        Accumulable<ArrayList<SingleDMUpdate>, DMPartialResult> partialResults = sc.accumulable(new ArrayList<SingleDMUpdate>(),
+                new DMPartialResultAccumulableParam());
+
+        Double[] normArray = new Double[localDM.length];
+        Accumulable<ArrayList<Double>, DMPartialResult> normalizations = sc.accumulable(new ArrayList<Double>(Arrays.asList(normArray)), new DMNormalizationAccumulableParam());
+
+        docs.map(doc -> {
+            int[] validFeatures = doc.getFeatures().indices();
+            HashMap<Integer, Integer> dictFeatures = new HashMap<>();
+            for (int featID : validFeatures)
+                dictFeatures.put(featID, featID);
+            HashMap<Integer, Integer> dictLabels = new HashMap<>();
+            for (int idx = 0; idx < doc.getLabels().length; idx++)
+                dictLabels.put(doc.getLabels()[idx], doc.getLabels()[idx]);
+
+            double[][] dm = distDM.getValue();
+            WeakHypothesis wh = distWH.getValue();
+            double[] labelsRes = new double[dm.length];
+            for (int labelID = 0; labelID < dm.length; labelID++) {
+                float catValue = 1;
+                if (dictLabels.containsKey(labelID)) {
+                    catValue = -1;
+                }
+
+                // Compute the weak hypothesis value.
+                double value = 0;
+                WeakHypothesis.WeakHypothesisData v = wh.getLabelData(labelID);
+                int pivot = v.getFeatureID();
+                if (dictFeatures.containsKey(pivot))
+                    value = v.getC1();
+                else
+                    value = v.getC0();
+
+
+                double partialRes = dm[labelID][doc.getPointID()] * Math.exp(catValue * value);
+                labelsRes[labelID] = partialRes;
+            }
+
+            return new DMPartialResult(doc.getPointID(), labelsRes);
+        }).foreach(r -> {
+            partialResults.add(r);
+            normalizations.add(r);
+        });
+
+        // Update distribution matrix.
+        ArrayList<SingleDMUpdate> updates = partialResults.value();
+        ArrayList<Double> normalizationValues = normalizations.value();
+        for (int i = 0; i < updates.size(); i++) {
+            SingleDMUpdate update = updates.get(i);
+            localDM[update.getLabelID()][update.getDocID()] = update.getResult() / normalizationValues.get(update.getLabelID());
+        }
+
+    }
+
+    /*protected void updateDistributionMatrix(JavaSparkContext sc, JavaRDD<MultilabelPoint> docs, double[][] localDM, WeakHypothesis localWH) {
+        Broadcast<WeakHypothesis> distWH = sc.broadcast(localWH);
+        Broadcast<double[][]> distDM = sc.broadcast(localDM);
         JavaRDD<DMPartialResult> partialResults = docs.map(doc -> {
             int[] validFeatures = doc.getFeatures().indices();
             HashMap<Integer, Integer> dictFeatures = new HashMap<>();
@@ -295,7 +356,7 @@ public class MpBoostLearner {
                 localDM[labelID][docID] = localDM[labelID][docID] / normalizations[labelID];
             }
         }
-    }
+    }*/
 
     protected double[][] initDistributionMatrix(int numLabels, int numDocs) {
         double[][] dist = new double[numLabels][numDocs];
@@ -488,27 +549,6 @@ public class MpBoostLearner {
         this.numIterations = numIterations;
     }
 
-    static class DMPartialResult implements Serializable {
-        private final int docID;
-        private double[] labelsRes;
-
-        DMPartialResult(int docID, double[] labelsRes) {
-            this.docID = docID;
-            this.labelsRes = labelsRes;
-        }
-
-        public int getDocID() {
-            return docID;
-        }
-
-        public double[] getLabelsRes() {
-            return labelsRes;
-        }
-
-        public void setLabelsRes(double[] labelsRes) {
-            this.labelsRes = labelsRes;
-        }
-    }
 
     private static class WeakHypothesisResults implements Serializable {
         private final int[] pivot;

@@ -397,27 +397,6 @@ public class AdaBoostMHLearner {
         this.numIterations = numIterations;
     }
 
-    static class DMPartialResult implements Serializable {
-        private final int docID;
-        private double[] labelsRes;
-
-        DMPartialResult(int docID, double[] labelsRes) {
-            this.docID = docID;
-            this.labelsRes = labelsRes;
-        }
-
-        public int getDocID() {
-            return docID;
-        }
-
-        public double[] getLabelsRes() {
-            return labelsRes;
-        }
-
-        public void setLabelsRes(double[] labelsRes) {
-            this.labelsRes = labelsRes;
-        }
-    }
 
     private static class WeakHypothesisResults implements Serializable {
         private final int pivot;
