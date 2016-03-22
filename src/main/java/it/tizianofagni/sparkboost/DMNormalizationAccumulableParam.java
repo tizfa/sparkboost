@@ -48,6 +48,10 @@ public class DMNormalizationAccumulableParam implements AccumulableParam<ArrayLi
 
     @Override
     public ArrayList<Double> zero(ArrayList<Double> initialValue) {
-        return initialValue;
+        ArrayList<Double> ret = new ArrayList<>();
+        for (int i = 0; i < initialValue.size(); i++) {
+            ret.add(0d);
+        }
+        return ret;
     }
 }
