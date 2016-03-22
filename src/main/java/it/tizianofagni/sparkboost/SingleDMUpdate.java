@@ -21,12 +21,14 @@
 
 package it.tizianofagni.sparkboost;
 
+import java.io.Serializable;
+
 /**
  * A single update value in the distribution matrix after the end of an iteration.
  *
  * @author Tiziano Fagni (tiziano.fagni@isti.cnr.it)
  */
-public class SingleDMUpdate {
+public class SingleDMUpdate implements Serializable {
     private final int docID;
     private final int labelID;
     private final double result;
