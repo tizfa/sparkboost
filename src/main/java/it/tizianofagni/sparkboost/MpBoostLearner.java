@@ -298,7 +298,7 @@ public class MpBoostLearner {
             update.getDocID();
             update.getResult();
             update.getLabelID();
-
+            System.out.println("Norm: " + normalizationValues.size());
             localDM[update.getLabelID()][update.getDocID()] = update.getResult() / normalizationValues.get(update.getLabelID());
         }
 
