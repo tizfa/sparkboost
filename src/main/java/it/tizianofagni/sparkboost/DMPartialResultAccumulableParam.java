@@ -46,7 +46,6 @@ public class DMPartialResultAccumulableParam implements AccumulableParam<ArrayLi
 
     @Override
     public ArrayList<SingleDMUpdate> zero(ArrayList<SingleDMUpdate> initialValue) {
-        initialValue.clear();
-        return initialValue;
+        return new ArrayList<SingleDMUpdate>();
     }
 }
