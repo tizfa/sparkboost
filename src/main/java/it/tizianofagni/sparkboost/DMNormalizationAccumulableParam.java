@@ -50,7 +50,7 @@ public class DMNormalizationAccumulableParam implements AccumulableParam<ArrayLi
     public ArrayList<Double> zero(ArrayList<Double> initialValue) {
         ArrayList<Double> ret = new ArrayList<>();
         for (int i = 0; i < initialValue.size(); i++) {
-            ret.add(0d);
+            ret.add(0.0);
         }
         return ret;
     }
