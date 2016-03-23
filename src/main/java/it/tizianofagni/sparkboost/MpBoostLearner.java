@@ -298,6 +298,8 @@ public class MpBoostLearner {
             System.out.println("Doc id: " + update.getDocID() + ", Result: " + update.getResult() + ", Label ID: " + update.getLabelID());
             System.out.println("Norm: " + normalizationValues.size() + ", Label ID: " + update.getLabelID());
             System.out.println("localDM, rows: " + localDM.length + ", cols: " + localDM[0].length);
+            double normValue = normalizationValues.get(update.getLabelID());
+            double scurScore = update.getResult();
             localDM[update.getLabelID()][update.getDocID()] = update.getResult() / normalizationValues.get(update.getLabelID());
         }
 
