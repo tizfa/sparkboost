@@ -85,6 +85,7 @@ public class MPBoostLearnerExe {
 
         // Create and configure Spark context.
         SparkConf conf = new SparkConf().setAppName("Spark MPBoost learner");
+        conf.setMaster("local");
         JavaSparkContext sc = new JavaSparkContext(conf);
 
 

@@ -33,7 +33,8 @@ public class DMNormalizationAccumulableParam implements AccumulableParam<ArrayLi
     @Override
     public ArrayList<Double> addAccumulator(ArrayList<Double> normalization, DMPartialResult r) {
         for (int labelID = 0; labelID < r.labelsRes.length; labelID++) {
-            normalization.set(labelID, normalization.get(labelID) + r.labelsRes[labelID]);
+            double v = normalization.get(labelID) + r.labelsRes[labelID];
+            normalization.set(labelID, v);
         }
         return normalization;
     }
@@ -41,17 +42,17 @@ public class DMNormalizationAccumulableParam implements AccumulableParam<ArrayLi
     @Override
     public ArrayList<Double> addInPlace(ArrayList<Double> r1, ArrayList<Double> r2) {
         for (int labelID = 0; labelID < r1.size(); labelID++) {
-            r1.set(labelID, r1.get(labelID) + r2.get(labelID));
+            double v = r1.get(labelID) + r2.get(labelID);
+            r1.set(labelID, v);
         }
         return r1;
     }
 
     @Override
     public ArrayList<Double> zero(ArrayList<Double> initialValue) {
-        ArrayList<Double> ret = new ArrayList<>();
         for (int i = 0; i < initialValue.size(); i++) {
-            ret.add(0.0);
+            initialValue.set(0, 0.0);
         }
-        return ret;
+        return initialValue;
     }
 }

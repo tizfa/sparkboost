@@ -250,6 +250,8 @@ public class MpBoostLearner {
                 new DMPartialResultAccumulableParam());
 
         Double[] normArray = new Double[localDM.length];
+        for (int i = 0; i < normArray.length; i++)
+            normArray[i] = 0.0;
         Accumulable<ArrayList<Double>, DMPartialResult> normalizations = sc.accumulable(new ArrayList<Double>(Arrays.asList(normArray)), new DMNormalizationAccumulableParam());
 
         docs.map(doc -> {
@@ -295,13 +297,6 @@ public class MpBoostLearner {
         ArrayList<Double> normalizationValues = normalizations.value();
         for (int i = 0; i < updates.size(); i++) {
             SingleDMUpdate update = updates.get(i);
-            System.out.println("Doc id: " + update.getDocID() + ", Result: " + update.getResult() + ", Label ID: " + update.getLabelID());
-            System.out.println("Norm: " + normalizationValues.size() + ", Label ID: " + update.getLabelID());
-            System.out.println("localDM, rows: " + localDM.length + ", cols: " + localDM[0].length);
-            for (int j = 0; j < normalizationValues.size(); j++)
-                System.out.println("Norm val " + j + ": " + normalizationValues.get(j));
-            double normValue = normalizationValues.get(update.getLabelID());
-            double scurScore = update.getResult();
             localDM[update.getLabelID()][update.getDocID()] = update.getResult() / normalizationValues.get(update.getLabelID());
         }
 
