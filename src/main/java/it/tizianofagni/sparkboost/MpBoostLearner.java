@@ -295,10 +295,7 @@ public class MpBoostLearner {
         ArrayList<Double> normalizationValues = normalizations.value();
         for (int i = 0; i < updates.size(); i++) {
             SingleDMUpdate update = updates.get(i);
-            update.getDocID();
-            update.getResult();
-            update.getLabelID();
-
+            System.out.println("Doc id: " + update.getDocID() + ", Result: " + update.getResult() + ", Label ID: " + update.getLabelID());
             System.out.println("Norm: " + normalizationValues.size() + ", Label ID: " + update.getLabelID());
             localDM[update.getLabelID()][update.getDocID()] = update.getResult() / normalizationValues.get(update.getLabelID());
         }
