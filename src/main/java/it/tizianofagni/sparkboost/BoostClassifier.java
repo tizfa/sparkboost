@@ -88,9 +88,7 @@ public class BoostClassifier implements Serializable {
             throw new NullPointerException("The set of documents to classify is 'null'");
 
         Logging.l().info("Load initial data and generating all necessary internal data representations...");
-        if (docs.partitions().size() < parallelismDegree) {
-            docs = docs.repartition(parallelismDegree);
-        }
+        docs = docs.repartition(parallelismDegree);
         docs = docs.cache();
         Logging.l().info("done!");
         Logging.l().info("Classifying documents...");
