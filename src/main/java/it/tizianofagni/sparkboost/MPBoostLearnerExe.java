@@ -34,7 +34,7 @@ public class MPBoostLearnerExe {
     public static void main(String[] args) {
         Options options = new Options();
         options.addOption("b", "binaryProblem", false, "Indicate if the input dataset contains a binary problem and not a multilabel one");
-        options.addOption("z", "labels0based", false, "Indicate if the labels IDs in the dataset to classify are already assigned in the range [0, numLabels-1] included");
+        options.addOption("z", "labels0based", false, "Indicate if the labels IDs in the dataset to classifyLibSvmWithResults are already assigned in the range [0, numLabels-1] included");
         options.addOption("l", "enableSparkLogging", false, "Enable logging messages of Spark");
         options.addOption("w", "windowsLocalModeFix", true, "Set the directory containing the winutils.exe command");
         options.addOption("dp", "documentPartitions", true, "The number of document partitions");

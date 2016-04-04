@@ -68,24 +68,28 @@ public class BoostClassifier implements Serializable {
 
 
     /**
-     * Classify the set of input documents. Please be sure that that the features IDs and labels IDs
-     * used in this document set match those used during training phase.
-     * <p>
-     * IMPORTANT NOTE: the classification results are collected on the driver process so the results
-     * are stored on RAM memory. If you classify a lot of documents, be sure to give enough memory to Spark
-     * driver process or just split your documents collection in small partitions and classify one partition at
-     * time.
+     * @param sc
+     * @param docResults
+     */
+    public void saveClassificationResults(JavaSparkContext sc, JavaRDD<DocClassificationResults> docResults) {
+
+    }
+
+    /**
+     * Get an RDD containing all the documents classified under the current taxonomy. Useful to postprocess the set of
+     * classification results.
      *
      * @param sc                The Spark context.
-     * @param docs              The set of documents to classify.
-     * @param parallelismDegree The number of workers used to classify documents.
-     * @return The results of the classification process.
+     * @param docs              The RDD containing the set of the documents to be classified.
+     * @param parallelismDegree The number of partitions (parallelism degree) used while processing the
+     *                          set of input documents.
+     * @return An RDD containing the documents classified under the current taxonomy.
      */
-    public ClassificationResults classify(JavaSparkContext sc, JavaRDD<MultilabelPoint> docs, int parallelismDegree) {
+    public JavaRDD<DocClassificationResults> classify(JavaSparkContext sc, JavaRDD<MultilabelPoint> docs, int parallelismDegree) {
         if (sc == null)
             throw new NullPointerException("The Spark context is 'null'");
         if (docs == null)
-            throw new NullPointerException("The set of documents to classify is 'null'");
+            throw new NullPointerException("The set of documents to classifyLibSvmWithResults is 'null'");
 
         Logging.l().info("Load initial data and generating all necessary internal data representations...");
         docs = docs.repartition(parallelismDegree);
@@ -93,7 +97,7 @@ public class BoostClassifier implements Serializable {
         Logging.l().info("done!");
         Logging.l().info("Classifying documents...");
         Broadcast<WeakHypothesis[]> whsBr = sc.broadcast(whs);
-        ClassificationResults classifications = docs.map(doc -> {
+        JavaRDD<DocClassificationResults> classifications = docs.map(doc -> {
             WeakHypothesis[] whs = whsBr.getValue();
             int[] indices = doc.getFeatures().indices();
             HashMap<Integer, Integer> dict = new HashMap<Integer, Integer>();
@@ -139,16 +143,54 @@ public class BoostClassifier implements Serializable {
                 }
             }
             ContingencyTable ct = new ContingencyTable(tp, tn, fp, fn);
-            int[][] labelsRet = new int[1][];
-            labelsRet[0] = labelAssigned.stream().mapToInt(i -> i).toArray();
-            double[][] scoresRet = new double[1][];
-            scoresRet[0] = labelScores.stream().mapToDouble(i -> i).toArray();
-            int[][] goldLabelsRet = new int[1][];
-            goldLabelsRet[0] = dc.getGoldLabels();
+            int[] labelsRet = labelAssigned.stream().mapToInt(i -> i).toArray();
+            double scoresRet[] = labelScores.stream().mapToDouble(i -> i).toArray();
+            int[] goldLabelsRet = dc.getGoldLabels();
             int[] documents = new int[]{docID};
 
-            return new ClassificationResults(1, documents, labelsRet, scoresRet, goldLabelsRet, ct);
+            return new DocClassificationResults(docID, labelsRet, scoresRet, goldLabelsRet, ct);
+        });
+        return classifications;
+    }
 
+
+
+    /**
+     * Classify the set of input documents. Please be sure that that the features IDs and labels IDs
+     * used in this document set match those used during training phase.
+     * <p>
+     * IMPORTANT NOTE: the classification results are collected on the driver process so the results
+     * are stored on RAM memory. If you classifyLibSvmWithResults a lot of documents, be sure to give enough memory to Spark
+     * driver process or just split your documents collection in small partitions and classifyLibSvmWithResults one partition at
+     * time. An alternative is to call the method {@link #classify(JavaSparkContext, JavaRDD, int)} and the process yourself
+     * the single document classification results (e.g. with toLocalIterator() method) in the way you want.
+     *
+     * @param sc                The Spark context.
+     * @param docs              The set of documents to classifyLibSvmWithResults.
+     * @param parallelismDegree The number of workers used to classifyLibSvmWithResults documents.
+     * @return The results of the classification process.
+     */
+    public ClassificationResults classifyLibSvmWithResults(JavaSparkContext sc, JavaRDD<MultilabelPoint> docs, int parallelismDegree) {
+        if (sc == null)
+            throw new NullPointerException("The Spark context is 'null'");
+        if (docs == null)
+            throw new NullPointerException("The set of documents to classifyLibSvmWithResults is 'null'");
+
+
+        // Classify every document.
+        JavaRDD<DocClassificationResults> docClassificationResults = classify(sc, docs, parallelismDegree);
+
+        // Merge classification results of every document.
+        ClassificationResults classifications = docClassificationResults.map(doc -> {
+            int[][] labelsRet = new int[1][];
+            labelsRet[0] = doc.getLabels();
+            double[][] scoresRet = new double[1][];
+            scoresRet[0] = doc.getScores();
+            int[][] goldLabelsRet = new int[1][];
+            goldLabelsRet[0] = doc.getGoldLabels();
+            int[] documents = new int[]{doc.getDocID()};
+
+            return new ClassificationResults(1, documents, labelsRet, scoresRet, goldLabelsRet, doc.getCt());
 
         }).reduce((cl1, cl2) -> {
             int numDocuments = cl1.getNumDocs() + cl2.getNumDocs();
@@ -197,15 +239,28 @@ public class BoostClassifier implements Serializable {
      * in the input dataset will get a document ID corresponding at the original row index of the document in the dataset file.
      *
      * @param sc
-     * @param libSvmFile        The input file containing documents to classify.
-     * @param parallelismDegree The number of workers used to classify documents.
+     * @param libSvmFile        The input file containing documents to classifyLibSvmWithResults.
+     * @param parallelismDegree The number of workers used to classifyLibSvmWithResults documents.
      * @param labels0Based      True if the label indexes specified in the input file are 0-based (i.e. the first label ID is 0), false if they
      *                          are 1-based (i.e. the first label ID is 1).
      * @param binaryProblem     True if the input file contains data for a binary problem, false if the input file contains data for a multiclass multilabel
      *                          problem.
      * @return The results of the classification process.
      */
-    public ClassificationResults classify(JavaSparkContext sc, String libSvmFile, int parallelismDegree, boolean labels0Based, boolean binaryProblem) {
+    public ClassificationResults classifyLibSvmWithResults(JavaSparkContext sc, String libSvmFile, int parallelismDegree, boolean labels0Based, boolean binaryProblem) {
+        if (sc == null)
+            throw new NullPointerException("The Spark context is 'null'");
+        if (libSvmFile == null || libSvmFile.isEmpty())
+            throw new IllegalArgumentException("The data file is 'null' or empty");
+        if (parallelismDegree < 1)
+            throw new IllegalArgumentException("The parallelism degree is less than 1");
+        System.out.println("Load initial data and generating all necessary internal data representations...");
+        JavaRDD<MultilabelPoint> docs = DataUtils.loadLibSvmFileFormatDataAsList(sc, libSvmFile, labels0Based, binaryProblem);
+        return classifyLibSvmWithResults(sc, docs, parallelismDegree);
+    }
+
+
+    public JavaRDD<DocClassificationResults> classifyLibSvm(JavaSparkContext sc, String libSvmFile, int parallelismDegree, boolean labels0Based, boolean binaryProblem) {
         if (sc == null)
             throw new NullPointerException("The Spark context is 'null'");
         if (libSvmFile == null || libSvmFile.isEmpty())

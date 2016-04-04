@@ -34,10 +34,7 @@ import org.apache.spark.mllib.linalg.Vectors;
 import scala.Tuple2;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 /**
  * @author Tiziano Fagni (tiziano.fagni@isti.cnr.it)
@@ -66,6 +63,40 @@ public class DataUtils {
             hdfs.close();
         } catch (Exception e) {
             throw new RuntimeException("Writing Hadoop text file", e);
+        }
+    }
+
+
+    public static void saveHadoopClassificationResults(String outputPath, JavaRDD<DocClassificationResults> results) {
+        try {
+            Configuration configuration = new Configuration();
+            Path file = new Path(outputPath);
+            Path parentFile = file.getParent();
+            FileSystem hdfs = FileSystem.get(file.toUri(), configuration);
+            if (parentFile != null)
+                hdfs.mkdirs(parentFile);
+            OutputStream os = hdfs.create(file, true);
+            BufferedWriter br = new BufferedWriter(new OutputStreamWriter(os, "UTF-8"));
+            Iterator<DocClassificationResults> docs = results.toLocalIterator();
+            int tp = 0, tn = 0, fp = 0, fn = 0;
+            while (docs.hasNext()) {
+                DocClassificationResults doc = docs.next();
+                int docID = doc.getDocID();
+                int[] labels = doc.getLabels();
+                int[] goldLabels = doc.getGoldLabels();
+                br.write("DocID: " + docID + ", Labels assigned: " + Arrays.toString(labels) + ", Labels scores: " + Arrays.toString(doc.getScores()) + ", Gold labels: " + Arrays.toString(goldLabels) + "\n");
+                tp += doc.getCt().tp();
+                tn += doc.getCt().tn();
+                fp += doc.getCt().fp();
+                fn += doc.getCt().fn();
+            }
+            ContingencyTable ctRes = new ContingencyTable(tp, tn, fp, fn);
+            br.write("**** Effectiveness\n");
+            br.write(ctRes.toString() + "\n");
+            br.close();
+            hdfs.close();
+        } catch (Exception e) {
+            throw new RuntimeException("Saving results with Hadoop", e);
         }
     }
 
