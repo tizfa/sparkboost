@@ -42,7 +42,7 @@ public class BoostClassifierExe {
         options.addOption("l", "enableSparkLogging", false, "Enable logging messages of Spark");
         options.addOption("w", "windowsLocalModeFix", true, "Set the directory containing the winutils.exe command");
         options.addOption("p", "parallelismDegree", true, "Set the parallelism degree (default: number of available cores in the Spark runtime");
-        options.addOption("sdc", "singleDocumentClassification", true, "Process results one document at a time (useful on big test set to limit the usage of RAM memory)");
+        options.addOption("sdc", "singleDocumentClassification", false, "Process results one document at a time (useful on big test set to limit the usage of RAM memory)");
 
         CommandLineParser parser = new BasicParser();
         CommandLine cmd = null;
