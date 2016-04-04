@@ -67,37 +67,50 @@ public class DataUtils {
     }
 
 
-    public static void saveHadoopClassificationResults(String outputPath, JavaRDD<DocClassificationResults> results) {
-        try {
-            Configuration configuration = new Configuration();
-            Path file = new Path(outputPath);
-            Path parentFile = file.getParent();
-            FileSystem hdfs = FileSystem.get(file.toUri(), configuration);
-            if (parentFile != null)
-                hdfs.mkdirs(parentFile);
-            OutputStream os = hdfs.create(file, true);
-            BufferedWriter br = new BufferedWriter(new OutputStreamWriter(os, "UTF-8"));
-            Iterator<DocClassificationResults> docs = results.toLocalIterator();
-            int tp = 0, tn = 0, fp = 0, fn = 0;
-            while (docs.hasNext()) {
-                DocClassificationResults doc = docs.next();
-                int docID = doc.getDocID();
-                int[] labels = doc.getLabels();
-                int[] goldLabels = doc.getGoldLabels();
-                br.write("DocID: " + docID + ", Labels assigned: " + Arrays.toString(labels) + ", Labels scores: " + Arrays.toString(doc.getScores()) + ", Gold labels: " + Arrays.toString(goldLabels) + "\n");
-                tp += doc.getCt().tp();
-                tn += doc.getCt().tn();
-                fp += doc.getCt().fp();
-                fn += doc.getCt().fn();
+    public static <R> void saveHadoopClassificationResults(String outputPath, JavaRDD<DocClassificationResults> results) {
+
+        ContingencyTable ret = results.mapPartitionsWithIndex((id, data) -> {
+            try {
+                Configuration configuration = new Configuration();
+                Path file = new Path(outputPath + "/results" + id);
+                Path parentFile = file.getParent();
+                FileSystem hdfs = FileSystem.get(file.toUri(), configuration);
+                if (parentFile != null)
+                    hdfs.mkdirs(parentFile);
+                OutputStream os = hdfs.create(file, true);
+                BufferedWriter br = new BufferedWriter(new OutputStreamWriter(os, "UTF-8"));
+                Iterator<DocClassificationResults> docs = results.toLocalIterator();
+                int tp = 0, tn = 0, fp = 0, fn = 0;
+                while (docs.hasNext()) {
+                    DocClassificationResults doc = docs.next();
+                    int docID = doc.getDocID();
+                    int[] labels = doc.getLabels();
+                    int[] goldLabels = doc.getGoldLabels();
+                    br.write("DocID: " + docID + ", Labels assigned: " + Arrays.toString(labels) + ", Labels scores: " + Arrays.toString(doc.getScores()) + ", Gold labels: " + Arrays.toString(goldLabels) + "\n");
+                    tp += doc.getCt().tp();
+                    tn += doc.getCt().tn();
+                    fp += doc.getCt().fp();
+                    fn += doc.getCt().fn();
+                }
+                ContingencyTable ctRes = new ContingencyTable(tp, tn, fp, fn);
+                br.write("**** Effectiveness\n");
+                br.write(ctRes.toString() + "\n");
+                br.close();
+                hdfs.close();
+                ArrayList<ContingencyTable> tables = new ArrayList<ContingencyTable>();
+                tables.add(ctRes);
+                return tables.iterator();
+            } catch (Exception e) {
+                throw new RuntimeException("Saving results with Hadoop", e);
             }
-            ContingencyTable ctRes = new ContingencyTable(tp, tn, fp, fn);
-            br.write("**** Effectiveness\n");
-            br.write(ctRes.toString() + "\n");
-            br.close();
-            hdfs.close();
-        } catch (Exception e) {
-            throw new RuntimeException("Saving results with Hadoop", e);
-        }
+        }, true).reduce((ct1, ct2) -> {
+            ContingencyTable ct = new ContingencyTable(ct1.tp() + ct2.tp(),
+                    ct1.tn() + ct2.tn(), ct1.fp() + ct2.fp(), ct1.fn() + ct2.fn());
+            return ct;
+        });
+
+        DataUtils.saveHadoopTextFile(outputPath + "/global_contingency_table", ret.toString());
+
     }
 
 
