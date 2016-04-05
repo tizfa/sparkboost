@@ -71,7 +71,7 @@ public class DataUtils {
 
     public static <R> void saveHadoopClassificationResults(String outputPath, JavaRDD<DocClassificationResults> results) {
 
-        ContingencyTable ret = results.mapPartitionsWithIndex((id, data) -> {
+        ContingencyTable ret = results.mapPartitionsWithIndex((id, docs) -> {
             try {
                 Configuration configuration = new Configuration();
                 Path file = new Path(outputPath + "/results" + id);
@@ -81,7 +81,6 @@ public class DataUtils {
                     hdfs.mkdirs(parentFile);
                 OutputStream os = hdfs.create(file, true);
                 BufferedWriter br = new BufferedWriter(new OutputStreamWriter(os, "UTF-8"));
-                Iterator<DocClassificationResults> docs = results.toLocalIterator();
                 int tp = 0, tn = 0, fp = 0, fn = 0;
                 while (docs.hasNext()) {
                     DocClassificationResults doc = docs.next();
