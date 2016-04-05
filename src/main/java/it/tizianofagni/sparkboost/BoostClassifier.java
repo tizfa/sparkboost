@@ -155,7 +155,6 @@ public class BoostClassifier implements Serializable {
     }
 
 
-
     /**
      * Classify the set of input documents. Please be sure that that the features IDs and labels IDs
      * used in this document set match those used during training phase.
@@ -256,21 +255,44 @@ public class BoostClassifier implements Serializable {
         if (parallelismDegree < 1)
             throw new IllegalArgumentException("The parallelism degree is less than 1");
         System.out.println("Load initial data and generating all necessary internal data representations...");
-        JavaRDD<MultilabelPoint> docs = DataUtils.loadLibSvmFileFormatDataAsList(sc, libSvmFile, labels0Based, binaryProblem);
+        long numRows = DataUtils.getNumRowsFromLibSvmFile(sc, libSvmFile);
+        JavaRDD<MultilabelPoint> docs = DataUtils.loadLibSvmFileFormatDataAsList(sc, libSvmFile, labels0Based, binaryProblem, 0, numRows);
         return classifyLibSvmWithResults(sc, docs, parallelismDegree);
     }
 
 
-    public JavaRDD<DocClassificationResults> classifyLibSvm(JavaSparkContext sc, String libSvmFile, int parallelismDegree, boolean labels0Based, boolean binaryProblem) {
+    /**
+     * Perform classification in batch groups (where each group has a size of "batchSize") of the data contained in
+     * the specified file in LibSvm format.
+     *
+     * @param sc                The spark context.
+     * @param libSvmFile        The input data file.
+     * @param parallelismDegree The number of data partitions used for each batch group.
+     * @param labels0Based      True if the label indexes are 0-based, false if they are 1-based.
+     * @param binaryProblem     True if we are resolving a binary problem, false otherwise.
+     * @param batchSize         The number of documents in each batch data group.
+     * @param baseOutputDir     The base Hadoop output directory where to save the classification results.
+     */
+    public void classifyLibSvm(JavaSparkContext sc, String libSvmFile, int parallelismDegree, boolean labels0Based,
+                               boolean binaryProblem, int batchSize, String baseOutputDir) {
         if (sc == null)
             throw new NullPointerException("The Spark context is 'null'");
         if (libSvmFile == null || libSvmFile.isEmpty())
             throw new IllegalArgumentException("The data file is 'null' or empty");
         if (parallelismDegree < 1)
             throw new IllegalArgumentException("The parallelism degree is less than 1");
-        System.out.println("Load initial data and generating all necessary internal data representations...");
-        JavaRDD<MultilabelPoint> docs = DataUtils.loadLibSvmFileFormatDataAsList(sc, libSvmFile, labels0Based, binaryProblem);
-        return classify(sc, docs, parallelismDegree);
+        Logging.l().info("Load initial data and generating all necessary internal data representations...");
+        long numRows = DataUtils.getNumRowsFromLibSvmFile(sc, libSvmFile);
+        long processed = 0;
+        while (processed < numRows) {
+            JavaRDD<MultilabelPoint> docs = DataUtils.loadLibSvmFileFormatDataAsList(sc, libSvmFile, labels0Based, binaryProblem, processed, processed + batchSize);
+            JavaRDD<DocClassificationResults> results = classify(sc, docs, parallelismDegree);
+
+            String outputDir = baseOutputDir + "/batch" + batchSize;
+            DataUtils.saveHadoopClassificationResults(outputDir, results);
+            Logging.l().info("Classified batch data from doc " + processed + " to doc " + (processed + batchSize));
+            processed += batchSize;
+        }
     }
 
     private class PreliminaryDocumentClassification implements Serializable {

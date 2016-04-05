@@ -114,17 +114,37 @@ public class DataUtils {
     }
 
 
+    /**
+     * Get the number of rows (maximum number of documents) contained in the specified file in
+     * LibSvm format.
+     *
+     * @param sc       The Spark context.
+     * @param dataFile The file to analyze.
+     * @return The number of rows in the file.
+     */
+    public static long getNumRowsFromLibSvmFile(JavaSparkContext sc, String dataFile) {
+        if (sc == null)
+            throw new NullPointerException("The Spark Context is 'null'");
+        if (dataFile == null || dataFile.isEmpty())
+            throw new IllegalArgumentException("The dataFile is 'null'");
+
+        JavaRDD<String> lines = sc.textFile(dataFile).cache();
+        return lines.count();
+    }
+
 
     /**
-     * Load data file in LibSVm format. The documents IDs are assigned according to the row index in the original
+     * Load data file in LibSvm format. The documents IDs are assigned according to the row index in the original
      * file, i.e. useful at classification time. We are assuming that the feature IDs are the same as the training
      * file used to build the classification model.
      *
      * @param sc       The spark context.
      * @param dataFile The data file.
+     * @param  fromID The inclusive start document ID to read from.
+     * @param toID The noninclusive end document ID to read to.
      * @return An RDD containing the read points.
      */
-    public static JavaRDD<MultilabelPoint> loadLibSvmFileFormatDataAsList(JavaSparkContext sc, String dataFile, boolean labels0Based, boolean binaryProblem) {
+    public static JavaRDD<MultilabelPoint> loadLibSvmFileFormatDataAsList(JavaSparkContext sc, String dataFile, boolean labels0Based, boolean binaryProblem, long fromID, long toID) {
         if (sc == null)
             throw new NullPointerException("The Spark Context is 'null'");
         if (dataFile == null || dataFile.isEmpty())
@@ -146,8 +166,14 @@ public class DataUtils {
                 int docID = 0;
                 String line = br.readLine();
                 while (line != null) {
-                    if (line.isEmpty())
-                        return null;
+                    if (docID >= toID)
+                        break;
+                    if (docID < fromID || line.isEmpty()) {
+                        line = br.readLine();
+                        docID++;
+                        continue;
+                    }
+
                     String[] fields = line.split("\\s+");
                     String[] t = fields[0].split(",");
                     int[] labels = new int[0];

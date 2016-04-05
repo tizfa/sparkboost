@@ -121,8 +121,7 @@ public class BoostClassifierExe {
                 throw new RuntimeException("Writing classisfication results", e);
             }
         } else {
-            JavaRDD<DocClassificationResults> results = classifier.classifyLibSvm(sc, inputFile, parallelismDegree, labels0Based, binaryProblem);
-            DataUtils.saveHadoopClassificationResults(outputFile, results);
+            classifier.classifyLibSvm(sc, inputFile, parallelismDegree, labels0Based, binaryProblem, 100000, outputFile);
         }
 
         long endTime = System.currentTimeMillis();
