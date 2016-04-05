@@ -1,7 +1,9 @@
+
+
 /*
  *
  * ****************
- * This file is part of nlp4sparkml software package (https://github.com/tizfa/nlp4sparkml).
+ * This file is part of sparkboost software package (https://github.com/tizfa/sparkboost).
  *
  * Copyright 2016 Tiziano Fagni (tiziano.fagni@isti.cnr.it)
  *

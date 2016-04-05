@@ -1,7 +1,8 @@
+
 /*
  *
  * ****************
- * This file is part of nlp4sparkml software package (https://github.com/tizfa/nlp4sparkml).
+ * This file is part of sparkboost software package (https://github.com/tizfa/sparkboost).
  *
  * Copyright 2016 Tiziano Fagni (tiziano.fagni@isti.cnr.it)
  *
@@ -25,7 +26,6 @@ import org.apache.commons.cli.*;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.spark.SparkConf;
-import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 
 import java.util.Arrays;
