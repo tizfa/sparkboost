@@ -110,6 +110,7 @@ public class DataUtils {
                 throw new RuntimeException("Saving results with Hadoop", e);
             }
         }, true).reduce((ct1, ct2) -> {
+            Logging.l().info("Writing in reduce()");
             ContingencyTable ct = new ContingencyTable(ct1.tp() + ct2.tp(),
                     ct1.tn() + ct2.tn(), ct1.fp() + ct2.fp(), ct1.fn() + ct2.fn());
             return ct;
