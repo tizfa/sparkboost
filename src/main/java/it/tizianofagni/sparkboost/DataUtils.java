@@ -33,6 +33,7 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.mllib.linalg.SparseVector;
 import org.apache.spark.mllib.linalg.Vectors;
+import org.apache.spark.storage.StorageLevel;
 import scala.Tuple2;
 
 import java.io.*;
@@ -74,8 +75,8 @@ public class DataUtils {
 
     public static <R> void saveHadoopClassificationResults(String outputPath, JavaRDD<DocClassificationResults> results) {
 
-        ContingencyTable ret = results.mapPartitionsWithIndex((id, docs) -> {
-            String outFile = outputPath + "/results" + id;
+        JavaRDD<ClassificationPartialResults> classifications = results.mapPartitionsWithIndex((id, docs) -> {
+
             int tp = 0, tn = 0, fp = 0, fn = 0;
             StringBuilder sb = new StringBuilder();
             while (docs.hasNext()) {
@@ -93,20 +94,27 @@ public class DataUtils {
             sb.append("**** Effectiveness\n");
             sb.append(ctRes.toString() + "\n");
 
-            // Save generated output.
-            saveHadoopTextFile(outFile, sb.toString());
-
-            ArrayList<ContingencyTable> tables = new ArrayList<ContingencyTable>();
-            tables.add(ctRes);
+            ArrayList<ClassificationPartialResults> tables = new ArrayList<ClassificationPartialResults>();
+            tables.add(new ClassificationPartialResults(id, sb.toString(), ctRes));
             return tables.iterator();
 
-        }, true).reduce((ct1, ct2) -> {
+        }, true).persist(StorageLevel.MEMORY_AND_DISK());
+
+        classifications.foreachPartition(r -> {
+            ClassificationPartialResults res = r.next();
+            String outFile = outputPath + "/results" + res.partitionID;
+            // Save generated output.
+            saveHadoopTextFile(outFile, res.results);
+        });
+
+        ContingencyTable ctRes = classifications.map(cpr -> cpr.ct).reduce((ct1, ct2) -> {
+
             ContingencyTable ct = new ContingencyTable(ct1.tp() + ct2.tp(),
                     ct1.tn() + ct2.tn(), ct1.fp() + ct2.fp(), ct1.fn() + ct2.fn());
             return ct;
         });
 
-        DataUtils.saveHadoopTextFile(outputPath + "/global_contingency_table", ret.toString());
+        DataUtils.saveHadoopTextFile(outputPath + "/global_contingency_table", ctRes.toString());
 
     }
 
