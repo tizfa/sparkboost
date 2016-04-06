@@ -72,10 +72,10 @@ public class DataUtils {
     public static <R> void saveHadoopClassificationResults(String outputPath, JavaRDD<DocClassificationResults> results) {
 
         ContingencyTable ret = results.mapPartitionsWithIndex((id, docs) -> {
+            Path file = new Path(outputPath + "/results" + id);
+            Logging.l().info("Writing data in " + file.toUri().toASCIIString());
             try {
                 Configuration configuration = new Configuration();
-                Path file = new Path(outputPath + "/results" + id);
-                Logging.l().info("Writing data in " + file.toUri().toASCIIString());
                 Path parentFile = file.getParent();
                 FileSystem hdfs = FileSystem.get(file.toUri(), configuration);
                 if (parentFile != null)
