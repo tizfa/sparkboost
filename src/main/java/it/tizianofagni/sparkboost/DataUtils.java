@@ -75,6 +75,7 @@ public class DataUtils {
             try {
                 Configuration configuration = new Configuration();
                 Path file = new Path(outputPath + "/results" + id);
+                Logging.l().info("Writing data in " + file.toUri().toASCIIString());
                 Path parentFile = file.getParent();
                 FileSystem hdfs = FileSystem.get(file.toUri(), configuration);
                 if (parentFile != null)
@@ -97,7 +98,6 @@ public class DataUtils {
                 br.write("**** Effectiveness\n");
                 br.write(ctRes.toString() + "\n");
                 try {
-                    Logging.l().info("Wrote data in " + file.toUri().toASCIIString());
                     br.close();
                     hdfs.close();
                 } catch (Exception e) {
