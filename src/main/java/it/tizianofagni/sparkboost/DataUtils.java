@@ -36,7 +36,10 @@ import org.apache.spark.mllib.linalg.Vectors;
 import scala.Tuple2;
 
 import java.io.*;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * @author Tiziano Fagni (tiziano.fagni@isti.cnr.it)
@@ -72,45 +75,32 @@ public class DataUtils {
     public static <R> void saveHadoopClassificationResults(String outputPath, JavaRDD<DocClassificationResults> results) {
 
         ContingencyTable ret = results.mapPartitionsWithIndex((id, docs) -> {
-            Path file = new Path(outputPath + "/results" + id);
-            Logging.l().info("Writing data in " + file.toUri().toASCIIString());
-            try {
-                Configuration configuration = new Configuration();
-                Path parentFile = file.getParent();
-                FileSystem hdfs = FileSystem.get(file.toUri(), configuration);
-                if (parentFile != null)
-                    hdfs.mkdirs(parentFile);
-                OutputStream os = hdfs.create(file, true);
-                BufferedWriter br = new BufferedWriter(new OutputStreamWriter(os, "UTF-8"));
-                int tp = 0, tn = 0, fp = 0, fn = 0;
-                while (docs.hasNext()) {
-                    DocClassificationResults doc = docs.next();
-                    int docID = doc.getDocID();
-                    int[] labels = doc.getLabels();
-                    int[] goldLabels = doc.getGoldLabels();
-                    br.write("DocID: " + docID + ", Labels assigned: " + Arrays.toString(labels) + ", Labels scores: " + Arrays.toString(doc.getScores()) + ", Gold labels: " + Arrays.toString(goldLabels) + "\n");
-                    tp += doc.getCt().tp();
-                    tn += doc.getCt().tn();
-                    fp += doc.getCt().fp();
-                    fn += doc.getCt().fn();
-                }
-                ContingencyTable ctRes = new ContingencyTable(tp, tn, fp, fn);
-                br.write("**** Effectiveness\n");
-                br.write(ctRes.toString() + "\n");
-                try {
-                    br.close();
-                    hdfs.close();
-                } catch (Exception e) {
-                    // Ignore it.
-                }
-                ArrayList<ContingencyTable> tables = new ArrayList<ContingencyTable>();
-                tables.add(ctRes);
-                return tables.iterator();
-            } catch (Exception e) {
-                throw new RuntimeException("Saving results with Hadoop", e);
+            String outFile = outputPath + "/results" + id;
+            int tp = 0, tn = 0, fp = 0, fn = 0;
+            StringBuilder sb = new StringBuilder();
+            while (docs.hasNext()) {
+                DocClassificationResults doc = docs.next();
+                int docID = doc.getDocID();
+                int[] labels = doc.getLabels();
+                int[] goldLabels = doc.getGoldLabels();
+                sb.append("DocID: " + docID + ", Labels assigned: " + Arrays.toString(labels) + ", Labels scores: " + Arrays.toString(doc.getScores()) + ", Gold labels: " + Arrays.toString(goldLabels) + "\n");
+                tp += doc.getCt().tp();
+                tn += doc.getCt().tn();
+                fp += doc.getCt().fp();
+                fn += doc.getCt().fn();
             }
+            ContingencyTable ctRes = new ContingencyTable(tp, tn, fp, fn);
+            sb.append("**** Effectiveness\n");
+            sb.append(ctRes.toString() + "\n");
+
+            // Save generated output.
+            saveHadoopTextFile(outFile, sb.toString());
+
+            ArrayList<ContingencyTable> tables = new ArrayList<ContingencyTable>();
+            tables.add(ctRes);
+            return tables.iterator();
+
         }, true).reduce((ct1, ct2) -> {
-            Logging.l().info("Writing in reduce()");
             ContingencyTable ct = new ContingencyTable(ct1.tp() + ct2.tp(),
                     ct1.tn() + ct2.tn(), ct1.fp() + ct2.fp(), ct1.fn() + ct2.fn());
             return ct;
