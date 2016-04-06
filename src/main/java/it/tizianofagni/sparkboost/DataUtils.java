@@ -36,10 +36,7 @@ import org.apache.spark.mllib.linalg.Vectors;
 import scala.Tuple2;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 /**
  * @author Tiziano Fagni (tiziano.fagni@isti.cnr.it)
@@ -99,10 +96,13 @@ public class DataUtils {
                 ContingencyTable ctRes = new ContingencyTable(tp, tn, fp, fn);
                 br.write("**** Effectiveness\n");
                 br.write(ctRes.toString() + "\n");
-
-                br.close();
-                hdfs.close();
-
+                try {
+                    Logging.l().info("Wrote data in " + file.toUri().toASCIIString());
+                    br.close();
+                    hdfs.close();
+                } catch (Exception e) {
+                    // Ignore it.
+                }
                 ArrayList<ContingencyTable> tables = new ArrayList<ContingencyTable>();
                 tables.add(ctRes);
                 return tables.iterator();
@@ -146,8 +146,8 @@ public class DataUtils {
      *
      * @param sc       The spark context.
      * @param dataFile The data file.
-     * @param fromID   The inclusive start document ID to read from.
-     * @param toID     The noninclusive end document ID to read to.
+     * @param  fromID The inclusive start document ID to read from.
+     * @param toID The noninclusive end document ID to read to.
      * @return An RDD containing the read points.
      */
     public static JavaRDD<MultilabelPoint> loadLibSvmFileFormatDataAsList(JavaSparkContext sc, String dataFile, boolean labels0Based, boolean binaryProblem, long fromID, long toID) {
@@ -237,8 +237,8 @@ public class DataUtils {
     /**
      * Load data file in LibSVm format. The documents IDs are assigned arbitrarily by Spark.
      *
-     * @param sc               The spark context.
-     * @param dataFile         The data file.
+     * @param sc       The spark context.
+     * @param dataFile The data file.
      * @param minNumPartitions The minimum number of partitions to split data in "dataFile".
      * @return An RDD containing the read points.
      */
