@@ -96,8 +96,12 @@ public class DataUtils {
                 ContingencyTable ctRes = new ContingencyTable(tp, tn, fp, fn);
                 br.write("**** Effectiveness\n");
                 br.write(ctRes.toString() + "\n");
-                br.close();
-                hdfs.close();
+                try {
+                    br.close();
+                    hdfs.close();
+                } catch (Exception e) {
+                    // Ignore it.
+                }
                 ArrayList<ContingencyTable> tables = new ArrayList<ContingencyTable>();
                 tables.add(ctRes);
                 return tables.iterator();
