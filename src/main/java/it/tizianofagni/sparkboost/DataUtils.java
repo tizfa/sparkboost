@@ -37,10 +37,7 @@ import org.apache.spark.storage.StorageLevel;
 import scala.Tuple2;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 /**
  * @author Tiziano Fagni (tiziano.fagni@isti.cnr.it)
@@ -100,12 +97,13 @@ public class DataUtils {
 
         }, true).persist(StorageLevel.MEMORY_AND_DISK());
 
-        classifications.foreachPartition(r -> {
-            ClassificationPartialResults res = r.next();
+        Iterator<ClassificationPartialResults> it = classifications.toLocalIterator();
+        while (it.hasNext()) {
+            ClassificationPartialResults res = it.next();
             String outFile = outputPath + "/results" + res.partitionID;
             // Save generated output.
             saveHadoopTextFile(outFile, res.results);
-        });
+        }
 
         ContingencyTable ctRes = classifications.map(cpr -> cpr.ct).reduce((ct1, ct2) -> {
 
