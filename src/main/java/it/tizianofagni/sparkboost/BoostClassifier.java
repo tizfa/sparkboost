@@ -277,7 +277,7 @@ public class BoostClassifier implements Serializable {
 
         while (processed < numRows) {
             JavaRDD<MultilabelPoint> docs = DataUtils.loadLibSvmFileFormatDataAsList(sc, libSvmFile, labels0Based, binaryProblem, processed, processed + batchSize, numFeatures);
-            JavaRDD<DocClassificationResults> results = classify(sc, docs, parallelismDegree).coalesce(parallelismDegree);
+            JavaRDD<DocClassificationResults> results = classify(sc, docs, parallelismDegree);
 
             String outputDir = baseOutputDir + "/batch" + processed;
             DataUtils.saveHadoopClassificationResults(outputDir, results);

@@ -97,7 +97,7 @@ public class DataUtils {
 
         }, true).persist(StorageLevel.MEMORY_AND_DISK());
 
-        classifications.saveAsTextFile(outputPath + "/results");
+        classifications.coalesce(1, true).saveAsTextFile(outputPath + "/results");
 
 
         ContingencyTable ctRes = classifications.map(res -> {
