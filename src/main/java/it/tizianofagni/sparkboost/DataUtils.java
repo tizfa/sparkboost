@@ -107,16 +107,6 @@ public class DataUtils {
             saveHadoopTextFile(outFile, res.results);
         });
 
-        classifications.foreachPartition(partialResults -> {
-            int cont = 0;
-            while (partialResults.hasNext()) {
-                ClassificationPartialResults res = partialResults.next();
-                String outFile = outputPath + "/results" + res.partitionID + "_" + cont;
-                // Save generated output.
-                saveHadoopTextFile(outFile, res.results);
-                cont++;
-            }
-        });
 
         /*Iterator<ClassificationPartialResults> it = classifications.toLocalIterator();
         while (it.hasNext()) {
