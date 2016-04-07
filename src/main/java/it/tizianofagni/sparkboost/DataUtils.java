@@ -164,14 +164,18 @@ public class DataUtils {
      * @param toID     The noninclusive end document ID to read to.
      * @return An RDD containing the read points.
      */
-    public static JavaRDD<MultilabelPoint> loadLibSvmFileFormatDataAsList(JavaSparkContext sc, String dataFile, boolean labels0Based, boolean binaryProblem, long fromID, long toID) {
+    public static JavaRDD<MultilabelPoint> loadLibSvmFileFormatDataAsList(JavaSparkContext sc, String dataFile, boolean labels0Based, boolean binaryProblem, long fromID, long toID, int numFeaturesInDataset) {
         if (sc == null)
             throw new NullPointerException("The Spark Context is 'null'");
         if (dataFile == null || dataFile.isEmpty())
             throw new IllegalArgumentException("The dataFile is 'null'");
 
         JavaRDD<String> lines = sc.textFile(dataFile).cache();
-        int numFeatures = computeNumFeatures(lines);
+        int numFeatures = 0;
+        if (numFeaturesInDataset == -1)
+            numFeatures = computeNumFeatures(lines);
+        else
+            numFeatures = numFeaturesInDataset;
 
 
         ArrayList<MultilabelPoint> points = new ArrayList<>();

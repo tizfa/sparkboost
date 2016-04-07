@@ -242,7 +242,7 @@ public class BoostClassifier implements Serializable {
             throw new IllegalArgumentException("The parallelism degree is less than 1");
         System.out.println("Load initial data and generating all necessary internal data representations...");
         long numRows = DataUtils.getNumRowsFromLibSvmFile(sc, libSvmFile);
-        JavaRDD<MultilabelPoint> docs = DataUtils.loadLibSvmFileFormatDataAsList(sc, libSvmFile, labels0Based, binaryProblem, 0, numRows);
+        JavaRDD<MultilabelPoint> docs = DataUtils.loadLibSvmFileFormatDataAsList(sc, libSvmFile, labels0Based, binaryProblem, 0, numRows, -1);
         return classifyLibSvmWithResults(sc, docs, parallelismDegree);
     }
 
@@ -270,8 +270,13 @@ public class BoostClassifier implements Serializable {
         Logging.l().info("Load initial data and generating all necessary internal data representations...");
         long numRows = DataUtils.getNumRowsFromLibSvmFile(sc, libSvmFile);
         long processed = 0;
+
+        // Compute max num features.
+        JavaRDD<String> lines = sc.textFile(libSvmFile).cache();
+        int numFeatures = DataUtils.computeNumFeatures(lines);
+
         while (processed < numRows) {
-            JavaRDD<MultilabelPoint> docs = DataUtils.loadLibSvmFileFormatDataAsList(sc, libSvmFile, labels0Based, binaryProblem, processed, processed + batchSize);
+            JavaRDD<MultilabelPoint> docs = DataUtils.loadLibSvmFileFormatDataAsList(sc, libSvmFile, labels0Based, binaryProblem, processed, processed + batchSize, numFeatures);
             JavaRDD<DocClassificationResults> results = classify(sc, docs, parallelismDegree);
 
             String outputDir = baseOutputDir + "/batch" + processed;
