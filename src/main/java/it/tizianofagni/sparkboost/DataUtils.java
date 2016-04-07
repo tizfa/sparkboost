@@ -97,13 +97,25 @@ public class DataUtils {
 
         }, true).persist(StorageLevel.MEMORY_AND_DISK());
 
-        Iterator<ClassificationPartialResults> it = classifications.toLocalIterator();
+
+        classifications.foreachPartition(partialResults -> {
+            int cont = 0;
+            while (partialResults.hasNext()) {
+                ClassificationPartialResults res = partialResults.next();
+                String outFile = outputPath + "/results" + res.partitionID + "_" + cont;
+                // Save generated output.
+                saveHadoopTextFile(outFile, res.results);
+                cont++;
+            }
+        });
+
+        /*Iterator<ClassificationPartialResults> it = classifications.toLocalIterator();
         while (it.hasNext()) {
             ClassificationPartialResults res = it.next();
             String outFile = outputPath + "/results" + res.partitionID;
             // Save generated output.
             saveHadoopTextFile(outFile, res.results);
-        }
+        }*/
 
         ContingencyTable ctRes = classifications.map(cpr -> cpr.ct).reduce((ct1, ct2) -> {
 
