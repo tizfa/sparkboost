@@ -95,8 +95,9 @@ public class DataUtils {
             tables.add(new ClassificationPartialResults(id, sb.toString(), ctRes));
             return tables.iterator();
 
-        }, true);
-        //.persist(StorageLevel.MEMORY_AND_DISK());
+        }, true).persist(StorageLevel.MEMORY_AND_DISK());
+
+        classifications.saveAsTextFile(outputPath + "/results");
 
 
         /*classifications.foreach(res -> {
@@ -118,10 +119,8 @@ public class DataUtils {
             saveHadoopTextFile(outFile, res.results);
         }*/
 
+
         ContingencyTable ctRes = classifications.map(res -> {
-            String outFile = outputPath + "/results" + res.partitionID;
-            // Save generated output.
-            saveHadoopTextFile(outFile, res.results);
             return res.ct;
         }).reduce((ct1, ct2) -> {
 
