@@ -36,4 +36,9 @@ public class ClassificationPartialResults implements Serializable {
         this.results = results;
         this.ct = ct;
     }
+
+    @Override
+    public String toString() {
+        return results;
+    }
 }
