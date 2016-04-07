@@ -105,7 +105,7 @@ public class DataUtils {
         });*/
 
 
-        Iterator<ClassificationPartialResults> it = classifications.toLocalIterator();
+        /*Iterator<ClassificationPartialResults> it = classifications.toLocalIterator();
         ContingencyTable ctRes = new ContingencyTable(0, 0, 0, 0);
         while (it.hasNext()) {
             ClassificationPartialResults res = it.next();
@@ -115,14 +115,19 @@ public class DataUtils {
                     ctRes.tn() + res.ct.tn(), ctRes.fp() + res.ct.fp(), ctRes.fn() + res.ct.fn());
             // Save generated output.
             saveHadoopTextFile(outFile, res.results);
-        }
+        }*/
 
-        /*ContingencyTable ctRes = classifications.map(cpr -> cpr.ct).reduce((ct1, ct2) -> {
+        ContingencyTable ctRes = classifications.map(res -> {
+            String outFile = outputPath + "/results" + res.partitionID;
+            // Save generated output.
+            saveHadoopTextFile(outFile, res.results);
+            return res.ct;
+        }).reduce((ct1, ct2) -> {
 
             ContingencyTable ct = new ContingencyTable(ct1.tp() + ct2.tp(),
                     ct1.tn() + ct2.tn(), ct1.fp() + ct2.fp(), ct1.fn() + ct2.fn());
             return ct;
-        });*/
+        });
 
         DataUtils.saveHadoopTextFile(outputPath + "/global_contingency_table", ctRes.toString());
 
