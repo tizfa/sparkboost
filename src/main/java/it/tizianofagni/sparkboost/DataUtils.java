@@ -37,7 +37,10 @@ import org.apache.spark.storage.StorageLevel;
 import scala.Tuple2;
 
 import java.io.*;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * @author Tiziano Fagni (tiziano.fagni@isti.cnr.it)
@@ -98,6 +101,12 @@ public class DataUtils {
         }, true).persist(StorageLevel.MEMORY_AND_DISK());
 
 
+        classifications.foreach(res -> {
+            String outFile = outputPath + "/results" + res.partitionID;
+            // Save generated output.
+            saveHadoopTextFile(outFile, res.results);
+        });
+
         classifications.foreachPartition(partialResults -> {
             int cont = 0;
             while (partialResults.hasNext()) {
@@ -155,8 +164,8 @@ public class DataUtils {
      *
      * @param sc       The spark context.
      * @param dataFile The data file.
-     * @param  fromID The inclusive start document ID to read from.
-     * @param toID The noninclusive end document ID to read to.
+     * @param fromID   The inclusive start document ID to read from.
+     * @param toID     The noninclusive end document ID to read to.
      * @return An RDD containing the read points.
      */
     public static JavaRDD<MultilabelPoint> loadLibSvmFileFormatDataAsList(JavaSparkContext sc, String dataFile, boolean labels0Based, boolean binaryProblem, long fromID, long toID) {
@@ -246,8 +255,8 @@ public class DataUtils {
     /**
      * Load data file in LibSVm format. The documents IDs are assigned arbitrarily by Spark.
      *
-     * @param sc       The spark context.
-     * @param dataFile The data file.
+     * @param sc               The spark context.
+     * @param dataFile         The data file.
      * @param minNumPartitions The minimum number of partitions to split data in "dataFile".
      * @return An RDD containing the read points.
      */
