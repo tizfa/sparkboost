@@ -100,26 +100,6 @@ public class DataUtils {
         classifications.saveAsTextFile(outputPath + "/results");
 
 
-        /*classifications.foreach(res -> {
-            String outFile = outputPath + "/results" + res.partitionID;
-            // Save generated output.
-            saveHadoopTextFile(outFile, res.results);
-        });*/
-
-
-        /*Iterator<ClassificationPartialResults> it = classifications.toLocalIterator();
-        ContingencyTable ctRes = new ContingencyTable(0, 0, 0, 0);
-        while (it.hasNext()) {
-            ClassificationPartialResults res = it.next();
-            String outFile = outputPath + "/results" + res.partitionID;
-
-            ctRes = new ContingencyTable(ctRes.tp() + res.ct.tp(),
-                    ctRes.tn() + res.ct.tn(), ctRes.fp() + res.ct.fp(), ctRes.fn() + res.ct.fn());
-            // Save generated output.
-            saveHadoopTextFile(outFile, res.results);
-        }*/
-
-
         ContingencyTable ctRes = classifications.map(res -> {
             return res.ct;
         }).reduce((ct1, ct2) -> {
