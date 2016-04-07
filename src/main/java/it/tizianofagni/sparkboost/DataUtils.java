@@ -37,10 +37,7 @@ import org.apache.spark.storage.StorageLevel;
 import scala.Tuple2;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 /**
  * @author Tiziano Fagni (tiziano.fagni@isti.cnr.it)
@@ -101,27 +98,31 @@ public class DataUtils {
         }, true).persist(StorageLevel.MEMORY_AND_DISK());
 
 
-        classifications.foreach(res -> {
+        /*classifications.foreach(res -> {
             String outFile = outputPath + "/results" + res.partitionID;
             // Save generated output.
             saveHadoopTextFile(outFile, res.results);
-        });
+        });*/
 
 
-        /*Iterator<ClassificationPartialResults> it = classifications.toLocalIterator();
+        Iterator<ClassificationPartialResults> it = classifications.toLocalIterator();
+        ContingencyTable ctRes = new ContingencyTable(0, 0, 0, 0);
         while (it.hasNext()) {
             ClassificationPartialResults res = it.next();
             String outFile = outputPath + "/results" + res.partitionID;
+
+            ctRes = new ContingencyTable(ctRes.tp() + res.ct.tp(),
+                    ctRes.tn() + res.ct.tn(), ctRes.fp() + res.ct.fp(), ctRes.fn() + res.ct.fn());
             // Save generated output.
             saveHadoopTextFile(outFile, res.results);
-        }*/
+        }
 
-        ContingencyTable ctRes = classifications.map(cpr -> cpr.ct).reduce((ct1, ct2) -> {
+        /*ContingencyTable ctRes = classifications.map(cpr -> cpr.ct).reduce((ct1, ct2) -> {
 
             ContingencyTable ct = new ContingencyTable(ct1.tp() + ct2.tp(),
                     ct1.tn() + ct2.tn(), ct1.fp() + ct2.fp(), ct1.fn() + ct2.fn());
             return ct;
-        });
+        });*/
 
         DataUtils.saveHadoopTextFile(outputPath + "/global_contingency_table", ctRes.toString());
 
