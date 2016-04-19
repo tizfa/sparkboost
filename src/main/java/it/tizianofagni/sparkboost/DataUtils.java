@@ -28,6 +28,7 @@ import org.apache.commons.lang.ArrayUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.spark.HashPartitioner;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.broadcast.Broadcast;
@@ -248,7 +249,8 @@ public class DataUtils {
         JavaRDD<String> lines = sc.textFile(dataFile, minNumPartitions).cache();
         int localNumFeatures = computeNumFeatures(lines);
         Broadcast<Integer> distNumFeatures = sc.broadcast(localNumFeatures);
-        JavaRDD<MultilabelPoint> docs = lines.filter(line -> !line.isEmpty()).zipWithIndex().map(item -> {
+        int numExecutors = sc.getConf().getInt("spark.executor.instances", 1);
+        JavaRDD<MultilabelPoint> docs = lines.filter(line -> !line.isEmpty()).zipWithIndex().partitionBy(new HashPartitioner(numExecutors)).map(item -> {
             int numFeatures = distNumFeatures.getValue();
             String line = item._1();
             long indexLong = item._2();
