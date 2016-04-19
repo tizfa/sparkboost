@@ -250,6 +250,7 @@ public class DataUtils {
         int localNumFeatures = computeNumFeatures(lines);
         Broadcast<Integer> distNumFeatures = sc.broadcast(localNumFeatures);
         int numExecutors = sc.getConf().getInt("spark.executor.instances", 1);
+        Logging.l().info("Num executors = " + numExecutors);
         JavaRDD<MultilabelPoint> docs = lines.filter(line -> !line.isEmpty()).zipWithIndex().partitionBy(new HashPartitioner(numExecutors)).map(item -> {
             int numFeatures = distNumFeatures.getValue();
             String line = item._1();
