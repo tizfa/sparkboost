@@ -250,10 +250,7 @@ public class DataUtils {
         JavaRDD<String> lines = sc.textFile(dataFile, minNumPartitions).cache();
         int localNumFeatures = computeNumFeatures(lines);
         Broadcast<Integer> distNumFeatures = sc.broadcast(localNumFeatures);
-        // Get the number of real executors used to divide the input data.
-        int numExecutors = sc.sc().getExecutorStorageStatus().length - 1;
-        Logging.l().info("Num executors = " + numExecutors);
-        JavaRDD<MultilabelPoint> docs = lines.filter(line -> !line.isEmpty()).zipWithIndex().partitionBy(new HashPartitioner(numExecutors)).map(item -> {
+        JavaRDD<MultilabelPoint> docs = lines.filter(line -> !line.isEmpty()).zipWithIndex().map(item -> {
             int numFeatures = distNumFeatures.getValue();
             String line = item._1();
             long indexLong = item._2();
