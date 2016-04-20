@@ -299,6 +299,7 @@ public class DataUtils {
             return new MultilabelPoint(index, v, labels);
         });
 
+        lines.unpersist();
         return docs;
     }
 
