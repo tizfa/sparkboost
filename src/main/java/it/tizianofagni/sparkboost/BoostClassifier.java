@@ -41,6 +41,8 @@ import java.util.HashSet;
  */
 public class BoostClassifier implements Serializable {
 
+    static final long serialVersionUID = 4423454354350002L;
+    
     /**
      * The set of weak hypothesis of the model.
      */
