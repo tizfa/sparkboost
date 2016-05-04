@@ -136,6 +136,49 @@ public class DataUtils {
 
 
     /**
+     * Generate a new LibSvm output file giving each document an index corresponding to the index tha documents had on
+     * original input LibSvm file.
+     *
+     * @param sc         The spark context.
+     * @param dataFile   The data file.
+     * @param outputFile The output file.
+     */
+    public static void generateLibSvmFileWithIDs(JavaSparkContext sc, String dataFile, String outputFile) {
+        if (sc == null)
+            throw new NullPointerException("The Spark Context is 'null'");
+        if (dataFile == null || dataFile.isEmpty())
+            throw new IllegalArgumentException("The dataFile is 'null'");
+
+        ArrayList<MultilabelPoint> points = new ArrayList<>();
+        try {
+            Path pt = new Path(dataFile);
+            FileSystem fs = FileSystem.get(new Configuration());
+            BufferedReader br = new BufferedReader(new InputStreamReader(fs.open(pt)));
+
+            Path ptOut = new Path(outputFile);
+            BufferedWriter bw = new BufferedWriter((new OutputStreamWriter(fs.create(ptOut))));
+
+            try {
+                int docID = 0;
+                String line = br.readLine();
+                while (line != null) {
+                    bw.write("" + docID + "\t" + line + "\n");
+                    line = br.readLine();
+                    docID++;
+                }
+            } finally {
+                br.close();
+                bw.close();
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Reading input LibSVM data file", e);
+        }
+
+    }
+
+
+
+    /**
      * Load data file in LibSvm format. The documents IDs are assigned according to the row index in the original
      * file, i.e. useful at classification time. We are assuming that the feature IDs are the same as the training
      * file used to build the classification model.
@@ -302,6 +345,77 @@ public class DataUtils {
         lines.unpersist();
         return docs;
     }
+
+
+    /**
+     * Load data file in LibSVm format. The documents IDs are assigned arbitrarily by Spark.
+     *
+     * @param sc               The spark context.
+     * @param dataFile         The data file.
+     * @param minNumPartitions The minimum number of partitions to split data in "dataFile".
+     * @return An RDD containing the read points.
+     */
+    public static JavaRDD<MultilabelPoint> loadLibSvmFileFormatDataWithIDs(JavaSparkContext sc, String dataFile, boolean labels0Based, boolean binaryProblem, int minNumPartitions) {
+        if (sc == null)
+            throw new NullPointerException("The Spark Context is 'null'");
+        if (dataFile == null || dataFile.isEmpty())
+            throw new IllegalArgumentException("The dataFile is 'null'");
+        JavaRDD<String> lines = sc.textFile(dataFile, minNumPartitions).cache();
+        int localNumFeatures = computeNumFeatures(lines);
+        Broadcast<Integer> distNumFeatures = sc.broadcast(localNumFeatures);
+        JavaRDD<MultilabelPoint> docs = lines.filter(line -> !line.isEmpty()).map(entireRow -> {
+            int numFeatures = distNumFeatures.getValue();
+            String[] fields = entireRow.split("\t");
+            String line = fields[1];
+            int index = Integer.parseInt(fields[0]);
+            fields = line.split("\\s+");
+            String[] t = fields[0].split(",");
+            int[] labels = new int[0];
+            if (!binaryProblem) {
+                labels = new int[t.length];
+                for (int i = 0; i < t.length; i++) {
+                    String label = t[i];
+                    // Labels should be already 0-based.
+                    if (labels0Based)
+                        labels[i] = new Double(Double.parseDouble(label)).intValue();
+                    else
+                        labels[i] = new Double(Double.parseDouble(label)).intValue() - 1;
+                    if (labels[i] < 0)
+                        throw new IllegalArgumentException("In current configuration I obtain a negative label ID value. Please check if this is a problem binary or multiclass " +
+                                "and if the labels IDs are in form 0-based or 1-based");
+                    assert (labels[i] >= 0);
+                }
+            } else {
+                if (t.length > 1)
+                    throw new IllegalArgumentException("In binary problem you can only specify one label ID (+1 or -1) per document as valid label IDs");
+                int label = new Double(Double.parseDouble(t[0])).intValue();
+                if (label > 0) {
+                    labels = new int[]{0};
+                }
+            }
+            ArrayList<Integer> indexes = new ArrayList<Integer>();
+            ArrayList<Double> values = new ArrayList<Double>();
+            for (int j = 1; j < fields.length; j++) {
+                String data = fields[j];
+                if (data.startsWith("#"))
+                    // Beginning of a comment. Skip it.
+                    break;
+                String[] featInfo = data.split(":");
+                // Transform feature ID value in 0-based.
+                int featID = Integer.parseInt(featInfo[0]) - 1;
+                double value = Double.parseDouble(featInfo[1]);
+                indexes.add(featID);
+                values.add(value);
+            }
+
+            SparseVector v = (SparseVector) Vectors.sparse(numFeatures, indexes.stream().mapToInt(i -> i).toArray(), values.stream().mapToDouble(i -> i).toArray());
+            return new MultilabelPoint(index, v, labels);
+        });
+
+        lines.unpersist();
+        return docs;
+    }
+
 
     protected static int computeNumFeatures(JavaRDD<String> lines) {
         int maxFeatureID = lines.map(line -> {

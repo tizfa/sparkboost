@@ -256,6 +256,43 @@ public class BoostClassifier implements Serializable {
      * @param parallelismDegree The number of data partitions used for each batch group.
      * @param labels0Based      True if the label indexes are 0-based, false if they are 1-based.
      * @param binaryProblem     True if we are resolving a binary problem, false otherwise.
+     * @param baseOutputDir     The base Hadoop output directory where to save the classification results.
+     */
+    public void classifyLibSvmBigFile(JavaSparkContext sc, String libSvmFile, int parallelismDegree, boolean labels0Based,
+                                      boolean binaryProblem, String baseOutputDir) {
+        if (sc == null)
+            throw new NullPointerException("The Spark context is 'null'");
+        if (libSvmFile == null || libSvmFile.isEmpty())
+            throw new IllegalArgumentException("The data file is 'null' or empty");
+        if (parallelismDegree < 1)
+            throw new IllegalArgumentException("The parallelism degree is less than 1");
+        Logging.l().info("Load initial data and generating all necessary internal data representations...");
+        long numRows = DataUtils.getNumRowsFromLibSvmFile(sc, libSvmFile);
+
+        // Compute max num features.
+        JavaRDD<String> lines = sc.textFile(libSvmFile).cache();
+        int numFeatures = DataUtils.computeNumFeatures(lines);
+
+        String dataFile = libSvmFile + ".withIDs";
+        DataUtils.generateLibSvmFileWithIDs(sc, libSvmFile, dataFile);
+        JavaRDD<MultilabelPoint> docs = DataUtils.loadLibSvmFileFormatDataWithIDs(sc, dataFile, labels0Based, binaryProblem, parallelismDegree);
+        JavaRDD<DocClassificationResults> results = classify(sc, docs, parallelismDegree);
+        String outputDir = baseOutputDir + "/classificationResults.txt";
+        DataUtils.saveHadoopClassificationResults(outputDir, results);
+
+    }
+
+
+
+    /**
+     * Perform classification in batch groups (where each group has a size of "batchSize") of the data contained in
+     * the specified file in LibSvm format.
+     *
+     * @param sc                The spark context.
+     * @param libSvmFile        The input data file.
+     * @param parallelismDegree The number of data partitions used for each batch group.
+     * @param labels0Based      True if the label indexes are 0-based, false if they are 1-based.
+     * @param binaryProblem     True if we are resolving a binary problem, false otherwise.
      * @param batchSize         The number of documents in each batch data group.
      * @param baseOutputDir     The base Hadoop output directory where to save the classification results.
      */
