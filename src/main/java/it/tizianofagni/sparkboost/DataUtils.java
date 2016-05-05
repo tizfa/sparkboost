@@ -152,7 +152,7 @@ public class DataUtils {
         ArrayList<MultilabelPoint> points = new ArrayList<>();
         try {
             Path pt = new Path(dataFile);
-            FileSystem fs = FileSystem.get(new Configuration());
+            FileSystem fs = FileSystem.get(pt.toUri(), new Configuration());
             BufferedReader br = new BufferedReader(new InputStreamReader(fs.open(pt)));
 
             Path ptOut = new Path(outputFile);
