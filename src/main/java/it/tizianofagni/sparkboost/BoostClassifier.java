@@ -271,7 +271,7 @@ public class BoostClassifier implements Serializable {
             throw new IllegalArgumentException("The parallelism degree is less than 1");
         Logging.l().info("Load initial data and generating all necessary internal data representations...");
 
-        Logging.l().info("Generating a temporary files containing all documents with an ID assigned to each one...");
+        Logging.l().info("Generating a temporary file containing all documents with an ID assigned to each one...");
         String dataFile = libSvmFile + ".withIDs";
         DataUtils.generateLibSvmFileWithIDs(sc, libSvmFile, dataFile);
         Logging.l().info("done!");
@@ -284,6 +284,10 @@ public class BoostClassifier implements Serializable {
 
         Logging.l().info("Saving results on Hadoop storage...");
         DataUtils.saveHadoopClassificationResults(outputDir, results);
+        Logging.l().info("done.");
+
+        Logging.l().info("Deleting no more necessary temporary files...");
+        DataUtils.deleteHadoopFile(dataFile, true);
         Logging.l().info("done.");
     }
 

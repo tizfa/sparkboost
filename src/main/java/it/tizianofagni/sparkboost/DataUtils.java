@@ -71,6 +71,17 @@ public class DataUtils {
         }
     }
 
+    public static boolean deleteHadoopFile(String filepath, boolean recursive) {
+        try {
+            Configuration configuration = new Configuration();
+            Path file = new Path(filepath);
+            FileSystem hdfs = FileSystem.get(file.toUri(), configuration);
+            return hdfs.delete(file, true);
+        } catch (Exception e) {
+            throw new RuntimeException("Deleting Hadoop file", e);
+        }
+    }
+
 
     public static <R> void saveHadoopClassificationResults(String outputPath, JavaRDD<DocClassificationResults> results) {
 
