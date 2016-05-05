@@ -99,7 +99,7 @@ public class DataUtils {
 
         }, true).persist(StorageLevel.MEMORY_AND_DISK());
 
-        classifications.saveAsTextFile(outputPath + "/results");
+        classifications.saveAsTextFile(outputPath);
 
 
         ContingencyTable ctRes = classifications.map(res -> {
@@ -348,7 +348,8 @@ public class DataUtils {
 
 
     /**
-     * Load data file in LibSVm format. The documents IDs are assigned arbitrarily by Spark.
+     * Load data file in LibSVm format. The documents IDs are specified at beginning of each
+     * line containing document data.
      *
      * @param sc               The spark context.
      * @param dataFile         The data file.
@@ -367,7 +368,7 @@ public class DataUtils {
             int numFeatures = distNumFeatures.getValue();
             String[] fields = entireRow.split("\t");
             String line = fields[1];
-            int index = Integer.parseInt(fields[0]);
+            int docID = Integer.parseInt(fields[0]);
             fields = line.split("\\s+");
             String[] t = fields[0].split(",");
             int[] labels = new int[0];
@@ -409,7 +410,7 @@ public class DataUtils {
             }
 
             SparseVector v = (SparseVector) Vectors.sparse(numFeatures, indexes.stream().mapToInt(i -> i).toArray(), values.stream().mapToDouble(i -> i).toArray());
-            return new MultilabelPoint(index, v, labels);
+            return new MultilabelPoint(docID, v, labels);
         });
 
         lines.unpersist();

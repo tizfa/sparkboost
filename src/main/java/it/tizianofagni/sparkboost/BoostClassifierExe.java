@@ -28,8 +28,6 @@ import org.apache.log4j.Logger;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaSparkContext;
 
-import java.util.Arrays;
-
 /**
  * @author Tiziano Fagni (tiziano.fagni@isti.cnr.it)
  */
@@ -42,7 +40,6 @@ public class BoostClassifierExe {
         options.addOption("l", "enableSparkLogging", false, "Enable logging messages of Spark");
         options.addOption("w", "windowsLocalModeFix", true, "Set the directory containing the winutils.exe command");
         options.addOption("p", "parallelismDegree", true, "Set the parallelism degree (default: number of available cores in the Spark runtime");
-        //options.addOption("sdc", "singleDocumentClassification", false, "Process results one document at a time (useful on big test set to limit the usage of RAM memory)");
 
         CommandLineParser parser = new BasicParser();
         CommandLine cmd = null;
@@ -99,33 +96,8 @@ public class BoostClassifierExe {
             parallelismDegree = Integer.parseInt(cmd.getOptionValue("p"));
         }
 
-        classifier.classifyLibSvmBigFile(sc, inputFile, parallelismDegree, labels0Based, binaryProblem, outputFile);
-
-        /*if (!cmd.hasOption("sdc")) {
-
-            // Classify documents contained in "inputFile", a file in libsvm format.
-            ClassificationResults results = classifier.classifyLibSvmWithResults(sc, inputFile, parallelismDegree, labels0Based, binaryProblem);
-
-            // Write classification results to disk.
-            StringBuilder sb = new StringBuilder();
-            sb.append("**** Effectiveness\n");
-            sb.append(results.getCt().toString() + "\n");
-            sb.append("********\n");
-            for (int i = 0; i < results.getNumDocs(); i++) {
-                int docID = results.getDocuments()[i];
-                int[] labels = results.getLabels()[i];
-                int[] goldLabels = results.getGoldLabels()[i];
-                sb.append("DocID: " + docID + ", Labels assigned: " + Arrays.toString(labels) + ", Labels scores: " + Arrays.toString(results.getScores()[i]) + ", Gold labels: " + Arrays.toString(goldLabels) + "\n");
-            }
-            try {
-                DataUtils.saveHadoopTextFile(outputFile, sb.toString());
-            } catch (Exception e) {
-                throw new RuntimeException("Writing classisfication results", e);
-            }
-        } else {
-            classifier.classifyLibSvmBigFile(sc, inputFile, parallelismDegree, labels0Based, binaryProblem, outputFile);
-        }*/
-
+        // Classify documents available on specified input file.
+        classifier.classifyLibSvm(sc, inputFile, parallelismDegree, labels0Based, binaryProblem, outputFile);
         long endTime = System.currentTimeMillis();
         System.out.println("Execution time: " + (endTime - startTime) + " milliseconds.");
     }
