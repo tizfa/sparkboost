@@ -47,34 +47,97 @@ public class AdaBoostMHLearner {
     private int numIterations;
 
     /**
-     * The number of workers to use while analyzing the data.
+     * The number of partitions while analyzing
+     * an RDD of type {@link JavaRDD<MultilabelPoint>}.
      */
-    private int parallelismDegree;
+    private int numDocumentsPartitions;
+
+    /**
+     * The number of partitions while analyzing
+     * an RDD of type {@link JavaRDD<DataUtils.FeatureDocuments>}
+     */
+    private int numFeaturesPartitions;
+
+    /**
+     * The number of partitions while analyzing
+     * an RDD of type {@link JavaRDD<DataUtils.LabelDocuments>}
+     */
+    private int numLabelsPartitions;
+
 
     public AdaBoostMHLearner(JavaSparkContext sc) {
         if (sc == null)
             throw new NullPointerException("The SparkContext is 'null'");
         this.sc = sc;
-        this.parallelismDegree = 8;
         this.numIterations = 200;
+        this.numDocumentsPartitions = -1;
+        this.numFeaturesPartitions = -1;
+        this.numLabelsPartitions = -1;
     }
 
     /**
-     * Get the number of workers used while building a new classifier.
+     * Get the number of partitions while analyzing
+     * an RDD of type {@link JavaRDD<MultilabelPoint>}.
      *
-     * @return The number of workers used while building a new classifier.
+     * @return The number of partitions while analyzing
+     * an RDD of type {@link JavaRDD<MultilabelPoint>}.
      */
-    public int getParallelismDegree() {
-        return parallelismDegree;
+    public int getNumDocumentsPartitions() {
+        return numDocumentsPartitions;
     }
 
     /**
-     * Set the number of workers used while building a new classifier.
+     * Set the number of partitions while analyzing
+     * an RDD of type {@link JavaRDD<MultilabelPoint>}.
      *
-     * @param parallelismDegree The number of workers to use.
+     * @param numDocumentsPartitions The number of partitions.
      */
-    public void setParallelismDegree(int parallelismDegree) {
-        this.parallelismDegree = parallelismDegree;
+    public void setNumDocumentsPartitions(int numDocumentsPartitions) {
+        this.numDocumentsPartitions = numDocumentsPartitions;
+    }
+
+
+    /**
+     * Get the number of partitions while analyzing
+     * an RDD of type {@link JavaRDD<DataUtils.FeatureDocuments>}.
+     *
+     * @return The number of partitions while analyzing
+     * an RDD of type {@link JavaRDD<DataUtils.FeatureDocuments>}
+     */
+    public int getNumFeaturesPartitions() {
+        return numFeaturesPartitions;
+    }
+
+    /**
+     * Set the number of partitions while analyzing
+     * an RDD of type {@link JavaRDD<DataUtils.FeatureDocuments>}.
+     *
+     * @param numFeaturesPartitions The number of partitions.
+     */
+    public void setNumFeaturesPartitions(int numFeaturesPartitions) {
+        this.numFeaturesPartitions = numFeaturesPartitions;
+    }
+
+
+    /**
+     * Get the number of partitions while analyzing
+     * an RDD of type {@link JavaRDD<DataUtils.LabelDocuments>}.
+     *
+     * @return The number of partitions while analyzing
+     * an RDD of type {@link JavaRDD<DataUtils.LabelDocuments>}.
+     */
+    public int getNumLabelsPartitions() {
+        return numLabelsPartitions;
+    }
+
+    /**
+     * Set the number of partitions while analyzing
+     * an RDD of type {@link JavaRDD<DataUtils.LabelDocuments>}.
+     *
+     * @param numLabelsPartitions The number of partitions.
+     */
+    public void setNumLabelsPartitions(int numLabelsPartitions) {
+        this.numLabelsPartitions = numLabelsPartitions;
     }
 
     /**
@@ -88,24 +151,27 @@ public class AdaBoostMHLearner {
         if (docs == null)
             throw new NullPointerException("The set of input documents is 'null'");
 
-        Logging.l().info("Load initial data and generating all necessary internal data representations...");
-        if (docs.partitions().size() < getParallelismDegree()) {
-            docs = docs.repartition(getParallelismDegree());
-        }
+
+        // Repartition documents.
+        Logging.l().info("Load initial data and generating internal data representations...");
+        docs = docs.repartition(getNumDocumentsPartitions());
         docs = docs.persist(StorageLevel.MEMORY_AND_DISK_SER());
+        Logging.l().info("Docs: num partitions " + docs.partitions().size());
+
         int numDocs = DataUtils.getNumDocuments(docs);
         int numLabels = DataUtils.getNumLabels(docs);
         JavaRDD<DataUtils.LabelDocuments> labelDocuments = DataUtils.getLabelDocuments(docs);
-        if (labelDocuments.partitions().size() < getParallelismDegree()) {
-            labelDocuments = labelDocuments.repartition(getParallelismDegree());
-        }
-        labelDocuments = labelDocuments.persist(StorageLevel.MEMORY_AND_DISK_SER());
 
+        // Repartition labels.
+        labelDocuments = labelDocuments.repartition(getNumLabelsPartitions());
+        labelDocuments = labelDocuments.persist(StorageLevel.MEMORY_AND_DISK_SER());
+        Logging.l().info("Labels: num partitions " + labelDocuments.partitions().size());
+
+        // Repartition features.
         JavaRDD<DataUtils.FeatureDocuments> featureDocuments = DataUtils.getFeatureDocuments(docs);
-        if (featureDocuments.partitions().size() < getParallelismDegree()) {
-            featureDocuments = featureDocuments.repartition(getParallelismDegree());
-        }
+        featureDocuments = featureDocuments.repartition(getNumFeaturesPartitions());
         featureDocuments = featureDocuments.persist(StorageLevel.MEMORY_AND_DISK_SER());
+        Logging.l().info("Features: num partitions " + featureDocuments.partitions().size());
         Logging.l().info("Ok, done!");
 
         WeakHypothesis[] computedWH = new WeakHypothesis[numIterations];
@@ -145,7 +211,17 @@ public class AdaBoostMHLearner {
         if (libSvmFile == null || libSvmFile.isEmpty())
             throw new IllegalArgumentException("The input file is 'null' or empty");
 
-        JavaRDD<MultilabelPoint> docs = DataUtils.loadLibSvmFileFormatData(sc, libSvmFile, labels0Based, binaryProblem, 8);
+        int minNumPartitions = 8;
+        if (this.numDocumentsPartitions != -1)
+            minNumPartitions = this.numDocumentsPartitions;
+        JavaRDD<MultilabelPoint> docs = DataUtils.loadLibSvmFileFormatData(sc, libSvmFile, labels0Based, binaryProblem, minNumPartitions);
+        if (this.numDocumentsPartitions == -1)
+            this.numDocumentsPartitions = sc.defaultParallelism();
+        if (this.numFeaturesPartitions == -1)
+            this.numFeaturesPartitions = sc.defaultParallelism();
+        if (this.numLabelsPartitions == -1)
+            this.numLabelsPartitions = sc.defaultParallelism();
+        Logging.l().info("Docs partitions = " + this.numDocumentsPartitions + ", feats partitions = " + this.numFeaturesPartitions + ", labels partitions = " + this.getNumLabelsPartitions());
         return buildModel(docs);
     }
 

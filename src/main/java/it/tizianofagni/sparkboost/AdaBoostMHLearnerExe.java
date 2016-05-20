@@ -39,6 +39,9 @@ public class AdaBoostMHLearnerExe {
         options.addOption("z", "labels0based", false, "Indicate if the labels IDs in the dataset to classifyLibSvmWithResults are already assigned in the range [0, numLabels-1] included");
         options.addOption("l", "enableSparkLogging", false, "Enable logging messages of Spark");
         options.addOption("w", "windowsLocalModeFix", true, "Set the directory containing the winutils.exe command");
+        options.addOption("dp", "documentPartitions", true, "The number of document partitions");
+        options.addOption("fp", "featurePartitions", true, "The number of feature partitions");
+        options.addOption("lp", "labelPartitions", true, "The number of label partitions");
 
         CommandLineParser parser = new BasicParser();
         CommandLine cmd = null;
@@ -84,16 +87,23 @@ public class AdaBoostMHLearnerExe {
         }
 
         // Create and configure Spark context.
-        SparkConf conf = new SparkConf().setAppName("Spark MPBoost learner");
-        conf.setMaster(sparkMaster);
-        conf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer");
+        SparkConf conf = new SparkConf().setAppName("Spark AdaBoost.MH learner");
         JavaSparkContext sc = new JavaSparkContext(conf);
 
 
         // Create and configure learner.
         AdaBoostMHLearner learner = new AdaBoostMHLearner(sc);
         learner.setNumIterations(numIterations);
-        learner.setParallelismDegree(parallelismDegree);
+
+        if (cmd.hasOption("dp")) {
+            learner.setNumDocumentsPartitions(Integer.parseInt(cmd.getOptionValue("dp")));
+        }
+        if (cmd.hasOption("fp")) {
+            learner.setNumFeaturesPartitions(Integer.parseInt(cmd.getOptionValue("fp")));
+        }
+        if (cmd.hasOption("lp")) {
+            learner.setNumLabelsPartitions(Integer.parseInt(cmd.getOptionValue("lp")));
+        }
 
         // Build classifier with MPBoost learner.
         BoostClassifier classifier = learner.buildModel(inputFile, labels0Based, binaryProblem);
