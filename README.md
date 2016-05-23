@@ -68,10 +68,10 @@ where the parameters have the same meaning as used when building a MP-Boost clas
 #### Using a classifier
 To use an already built classifier over a test dataset (it does not matter if the model has been built with MP-Boost or AdaBoost.MH learner, they share the same forrmat for classification models!), use this command:
 ```
-spark-submit --class it.tizianofagni.sparkboost.BoostClassifierExe --master <sparkMasterAddress>  /path/to/sparkboost-1.0.0-bundle.jar hdfs://hltcluster.isti.cnr.it/user/fagni/sparkboost/dataset/kdd2010-algebra/kdda hdfs://hltcluster.isti.cnr.it/user/fagni/sparkboost/dataset/kdd2010-algebra/mp-boost.model  hdfs://hltcluster.isti.cnr.it/user/fagni/sparkboost/dataset/kdd2010-algebra/mp-boost.output
-java -cp ./target/sparkboost-0.6-bundle.jar it.tizianofagni.sparkboost.BoostClassifierExe datasetfile classifierModel outputResultsFile sparkMasterName parallelismDegree
+spark-submit --class it.tizianofagni.sparkboost.BoostClassifierExe --master <sparkMasterAddress>  /path/to/sparkboost-1.0.0-bundle.jar <testDatasetFile> 
+    <boostModelDirectory> <boostClassifierOutputDirectory>
 ```
-where `datasetFile` is the input file containing the dataset test examples, `classifierModel` is the file containing a previous generated classifier, `outputResultsFile` is the ouput file containing classification results, `sparkMasterName` is the name of Spark master host (or local[*] for executing the process locally on your machine) and `parallelismDegree` is the number of processing units to use while executing the algorithm.
+where `sparkMasterAddress` is the name of Spark master host (or local[*] for executing the process locally on your machine), `testDatasetFile` is the input test data file in LibSVM format, `boostModelDirectory` is the directory where the learner has saved its model and `boostClassifierOutputDirectory` is the directory where the classification output results will be saved. By using the parameter `-p` you can specify the parallelism degree while performing classification: if this parameter is not specified, by default the parallelism degree will be equals to the number of available cores in the Spark runtime.
 
 IMPORTANT NOTE: Each document in the test dataset will get a document ID corresponding at the original row index of the document in the dataset file.
 
@@ -100,7 +100,9 @@ JavaSparkContext sc = ... // Spark context to use;
 // MPBoostLearner.
 AdaBoostMHLearner learner = new AdaBoostMHLearner(sc);
 learner.setNumIterations(numIterations);
-learner.setParallelismDegree(parallelismDegree);
+learner.setNumDocumentsPartitions(numDocsPartitions);
+learner.setNumFeaturesPartitions(numFeaturesPartitions);
+learner.setNumLabelsPartitions(numLabelsPartitions);
 
 // Build a new classifier. Here we assume that the training data is available in
 // the input file which is written in LibSvm format.
@@ -117,8 +119,8 @@ JavaSparkContext sc = ... // Spark context to use;
 // Create and configure AdaBoost.MH learner. For MP-Boost, just use the class
 // MPBoostLearner.
 AdaBoostMHLearner learner = new AdaBoostMHLearner(sc);
-learner.setNumIterations(numIterations);
-learner.setParallelismDegree(parallelismDegree);
+// Customize learner (numIterations, num docs partitions, etc.) as in the previous snippet of code.....
+
 
 // You can prepare yourself the training data by generating an RDD with items
 // of type MultilabelPoint.
@@ -139,11 +141,11 @@ JavaSparkContext sc = ... // Spark context to use;
 BoostClassifier classifier = DataUtils.loadModel(sc, inputModel);
 
 // Classify documents contained in "inputFile", a file in libsvm format.
-ClassificationResults results = classifier.classify(sc, inputFile, parallelismDegree, labels0Based, binaryProblem);
+ClassificationResults results = classifier.classifyLibSvmWithResults(sc, inputFile, parallelismDegree, labels0Based, binaryProblem);
 
 // or classify documents available in already defined RDD.
 JavaRDD<MultilabelPoint> rdd = ...
-results = classifier.classify(sc, rdd, parallelismDegree);
+results = classifier.classifyWithResults(sc, rdd, parallelismDegree);
 
 // Print results in a StringBuilder.
 StringBuilder sb = new StringBuilder();
@@ -158,8 +160,25 @@ for (int i = 0; i < results.getNumDocs(); i++) {
 }
 ```
 
+The code above assumes that the classification results are all stored on RAM memory of Spark driver process. In situations where this is not feasible, you can use a code like the following to save classification results directly on secondary storage (e.g. hdfs):
+```java
+JavaSparkContext sc = ... // Spark context to use;
+
+// Load boosting classifier from disk.
+BoostClassifier classifier = DataUtils.loadModel(sc, inputModel);
+
+// Get the docs from somewhere (e.g. LibSVM file)
+JavaRDD<MultilabelPoint> docs = ...
+
+// Classify documents and save results to an RDD.
+JavaRDD<DocClassificationResults> results = classifier.classify(sc, docs, parallelismDegree);
+
+// Save the RDD on secondary storage.
+DataUtils.saveHadoopClassificationResults(outputDir, results);
+```
+
 ## Software compilation for latest snapshot
-If you are interested in using the latest snapshot of the software, you need to have [Maven](https://maven.apache.org/) and a Java 8 compiler installed on your machine. Download a copy of this software repository from 'develop' branch onto your machine on a specific folder, go inside that folder and at the command prompt put the following commands:
+If you are interested in using the latest snapshot of the software, you need to have [Maven](https://maven.apache.org/) and a Java 8 compiler installed on your machine. Download a copy of this software available in 'develop' branch onto your machine, put it on a specific folder, go inside that folder and at the command prompt put the following commands:
 ```
 mvn clean
 mvn -P devel package

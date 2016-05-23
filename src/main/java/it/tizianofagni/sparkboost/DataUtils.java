@@ -123,7 +123,6 @@ public class DataUtils {
         });
 
         DataUtils.saveHadoopTextFile(outputPath + "/global_contingency_table", ctRes.toString());
-
     }
 
 

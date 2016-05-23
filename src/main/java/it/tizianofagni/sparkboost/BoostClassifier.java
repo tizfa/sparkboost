@@ -55,13 +55,6 @@ public class BoostClassifier implements Serializable {
     }
 
 
-    /**
-     * @param sc
-     * @param docResults
-     */
-    public void saveClassificationResults(JavaSparkContext sc, JavaRDD<DocClassificationResults> docResults) {
-
-    }
 
     /**
      * Get an RDD containing all the documents classified under the current taxonomy. Useful to postprocess the set of
@@ -159,7 +152,7 @@ public class BoostClassifier implements Serializable {
      * @param parallelismDegree The number of workers used to classifyLibSvmWithResults documents.
      * @return The results of the classification process.
      */
-    public ClassificationResults classifyLibSvmWithResults(JavaSparkContext sc, JavaRDD<MultilabelPoint> docs, int parallelismDegree) {
+    public ClassificationResults classifyWithResults(JavaSparkContext sc, JavaRDD<MultilabelPoint> docs, int parallelismDegree) {
         if (sc == null)
             throw new NullPointerException("The Spark context is 'null'");
         if (docs == null)
@@ -246,7 +239,7 @@ public class BoostClassifier implements Serializable {
         System.out.println("Load initial data and generating all necessary internal data representations...");
         long numRows = DataUtils.getNumRowsFromLibSvmFile(sc, libSvmFile);
         JavaRDD<MultilabelPoint> docs = DataUtils.loadLibSvmFileFormatDataAsList(sc, libSvmFile, labels0Based, binaryProblem, 0, numRows, -1);
-        return classifyLibSvmWithResults(sc, docs, parallelismDegree);
+        return classifyWithResults(sc, docs, parallelismDegree);
     }
 
 
