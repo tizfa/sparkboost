@@ -5,11 +5,56 @@
     <output-test url="file://$MODULE_DIR$/target/test-classes" />
     <content url="file://$MODULE_DIR$">
       <sourceFolder url="file://$MODULE_DIR$/src/main/java" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/src/main/resources" type="java-resource" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.apache.spark:spark-core_2.10:1.6.0" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.apache.avro:avro-mapred:hadoop2:1.7.7" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.apache.avro:avro-ipc:1.7.7" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.apache.avro:avro:1.7.7" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.apache.avro:avro-ipc:tests:1.7.7" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.apache.xbean:xbean-asm5-shaded:4.4" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.apache.spark:spark-launcher_2.10:1.6.0" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.apache.spark:spark-network-common_2.10:1.6.0" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.apache.spark:spark-network-shuffle_2.10:1.6.0" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.fusesource.leveldbjni:leveldbjni-all:1.8" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: com.fasterxml.jackson.core:jackson-annotations:2.4.4" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.apache.spark:spark-unsafe_2.10:1.6.0" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.xerial.snappy:snappy-java:1.1.2" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: net.jpountz.lz4:lz4:1.3.0" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.roaringbitmap:RoaringBitmap:0.5.11" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: com.typesafe.akka:akka-remote_2.10:2.3.11" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: com.typesafe.akka:akka-actor_2.10:2.3.11" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: com.typesafe.akka:akka-slf4j_2.10:2.3.11" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.scala-lang:scala-library:2.10.5" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: io.netty:netty-all:4.0.29.Final" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: io.dropwizard.metrics:metrics-core:3.1.2" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: io.dropwizard.metrics:metrics-jvm:3.1.2" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: io.dropwizard.metrics:metrics-json:3.1.2" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: io.dropwizard.metrics:metrics-graphite:3.1.2" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.tachyonproject:tachyon-client:0.8.2" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: commons-lang:commons-lang:2.4" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.tachyonproject:tachyon-underfs-hdfs:0.8.2" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.tachyonproject:tachyon-underfs-s3:0.8.2" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.tachyonproject:tachyon-underfs-local:0.8.2" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: net.razorvine:pyrolite:4.9" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: net.sf.py4j:py4j:0.9" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.apache.spark:spark-mllib_2.10:1.6.0" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.apache.spark:spark-streaming_2.10:1.6.0" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.apache.spark:spark-sql_2.10:1.6.0" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.apache.spark:spark-catalyst_2.10:1.6.0" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.codehaus.janino:janino:2.7.8" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.codehaus.janino:commons-compiler:2.7.8" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.apache.parquet:parquet-column:1.7.0" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.apache.parquet:parquet-common:1.7.0" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.apache.parquet:parquet-encoding:1.7.0" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.apache.parquet:parquet-generator:1.7.0" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.apache.parquet:parquet-hadoop:1.7.0" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.apache.parquet:parquet-format:2.3.0-incubating" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.apache.parquet:parquet-jackson:1.7.0" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.apache.spark:spark-graphx_2.10:1.6.0" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.scalamacros:quasiquotes_2.10:2.0.0-M8" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: org.apache.spark:spark-core_2.10:1.6.0" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: org.apache.avro:avro-mapred:hadoop2:1.7.7" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: org.apache.avro:avro-ipc:1.7.7" level="project" />
