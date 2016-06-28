@@ -236,10 +236,25 @@ public class BoostClassifier implements Serializable {
             throw new IllegalArgumentException("The data file is 'null' or empty");
         if (parallelismDegree < 1)
             throw new IllegalArgumentException("The parallelism degree is less than 1");
-        System.out.println("Load initial data and generating all necessary internal data representations...");
-        long numRows = DataUtils.getNumRowsFromLibSvmFile(sc, libSvmFile);
-        JavaRDD<MultilabelPoint> docs = DataUtils.loadLibSvmFileFormatDataAsList(sc, libSvmFile, labels0Based, binaryProblem, 0, numRows, -1);
-        return classifyWithResults(sc, docs, parallelismDegree);
+
+
+        Logging.l().info("Generating a temporary file containing all documents with an ID assigned to each one...");
+        String dataFile = libSvmFile + ".withIDs";
+        DataUtils.generateLibSvmFileWithIDs(sc, libSvmFile, dataFile);
+        Logging.l().info("done!");
+
+        // Create an RDD with the input documents to be classified.
+        Logging.l().info("Creating a RDD containing all the documents to be classified...");
+        JavaRDD<MultilabelPoint> docs = DataUtils.loadLibSvmFileFormatDataWithIDs(sc, dataFile, labels0Based, binaryProblem, parallelismDegree);
+        Logging.l().info("done.");
+
+        ClassificationResults res = classifyWithResults(sc, docs, parallelismDegree);
+
+        Logging.l().info("Deleting no more necessary temporary files...");
+        DataUtils.deleteHadoopFile(dataFile, true);
+        Logging.l().info("done.");
+
+        return res;
     }
 
 
