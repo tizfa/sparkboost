@@ -370,7 +370,7 @@ public class DataUtils {
             throw new NullPointerException("The Spark Context is 'null'");
         if (dataFile == null || dataFile.isEmpty())
             throw new IllegalArgumentException("The dataFile is 'null'");
-        JavaRDD<String> lines = sc.textFile(dataFile).cache();
+        JavaRDD<String> lines = sc.textFile(dataFile, minNumPartitions).cache();
         int localNumFeatures = computeNumFeatures(lines);
         Broadcast<Integer> distNumFeatures = sc.broadcast(localNumFeatures);
         JavaRDD<MultilabelPoint> docs = lines.filter(line -> !line.isEmpty()).map(entireRow -> {
