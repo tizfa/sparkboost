@@ -1,5 +1,3 @@
-
-
 /*
  *
  * ****************
@@ -28,8 +26,6 @@ import org.apache.commons.lang.ArrayUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.spark.HashPartitioner;
-import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.broadcast.Broadcast;
@@ -39,11 +35,15 @@ import org.apache.spark.storage.StorageLevel;
 import scala.Tuple2;
 
 import java.io.*;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * @author Tiziano Fagni (tiziano.fagni@isti.cnr.it)
  */
+@SuppressWarnings("unchecked")
 public class DataUtils {
 
 
@@ -104,7 +104,7 @@ public class DataUtils {
             sb.append("**** Effectiveness\n");
             sb.append(ctRes.toString() + "\n");
 
-            ArrayList<ClassificationPartialResults> tables = new ArrayList<ClassificationPartialResults>();
+            ArrayList<ClassificationPartialResults> tables = new ArrayList<>();
             tables.add(new ClassificationPartialResults(id, sb.toString(), ctRes));
             return tables.iterator();
 
@@ -187,7 +187,6 @@ public class DataUtils {
     }
 
 
-
     /**
      * Load data file in LibSvm format. The documents IDs are assigned according to the row index in the original
      * file, i.e. useful at classification time. We are assuming that the feature IDs are the same as the training
@@ -256,8 +255,8 @@ public class DataUtils {
                             labels = new int[]{0};
                         }
                     }
-                    ArrayList<Integer> indexes = new ArrayList<Integer>();
-                    ArrayList<Double> values = new ArrayList<Double>();
+                    ArrayList<Integer> indexes = new ArrayList<>();
+                    ArrayList<Double> values = new ArrayList<>();
                     for (int j = 1; j < fields.length; j++) {
                         String data = fields[j];
                         if (data.startsWith("#"))
@@ -333,8 +332,8 @@ public class DataUtils {
                     labels = new int[]{0};
                 }
             }
-            ArrayList<Integer> indexes = new ArrayList<Integer>();
-            ArrayList<Double> values = new ArrayList<Double>();
+            ArrayList<Integer> indexes = new ArrayList<>();
+            ArrayList<Double> values = new ArrayList<>();
             for (int j = 1; j < fields.length; j++) {
                 String data = fields[j];
                 if (data.startsWith("#"))
@@ -404,8 +403,8 @@ public class DataUtils {
                     labels = new int[]{0};
                 }
             }
-            ArrayList<Integer> indexes = new ArrayList<Integer>();
-            ArrayList<Double> values = new ArrayList<Double>();
+            ArrayList<Integer> indexes = new ArrayList<>();
+            ArrayList<Double> values = new ArrayList<>();
             for (int j = 1; j < fields.length; j++) {
                 String data = fields[j];
                 if (data.startsWith("#"))
@@ -477,15 +476,15 @@ public class DataUtils {
     public static JavaRDD<LabelDocuments> getLabelDocuments(JavaRDD<MultilabelPoint> documents) {
         return documents.flatMapToPair(doc -> {
             int[] labels = doc.getLabels();
-            ArrayList<Integer> docAr = new ArrayList<Integer>();
+            ArrayList<Integer> docAr = new ArrayList<>();
             docAr.add(doc.getPointID());
-            ArrayList<Tuple2<Integer, ArrayList<Integer>>> ret = new ArrayList<Tuple2<Integer, ArrayList<Integer>>>();
+            ArrayList<Tuple2<Integer, ArrayList<Integer>>> ret = new ArrayList<>();
             for (int i = 0; i < labels.length; i++) {
                 ret.add(new Tuple2<>(labels[i], docAr));
             }
             return ret;
         }).reduceByKey((list1, list2) -> {
-            ArrayList<Integer> ret = new ArrayList<Integer>();
+            ArrayList<Integer> ret = new ArrayList<>();
             ret.addAll(list1);
             ret.addAll(list2);
             Collections.sort(ret);

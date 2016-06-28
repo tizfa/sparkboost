@@ -1,6 +1,3 @@
-
-
-
 /*
  *
  * ****************
@@ -42,7 +39,7 @@ import java.util.HashSet;
 public class BoostClassifier implements Serializable {
 
     static final long serialVersionUID = 4423454354350002L;
-    
+
     /**
      * The set of weak hypothesis of the model.
      */
@@ -53,7 +50,6 @@ public class BoostClassifier implements Serializable {
             throw new NullPointerException("The set of generated WHs is 'null'");
         this.whs = whs;
     }
-
 
 
     /**
@@ -83,7 +79,7 @@ public class BoostClassifier implements Serializable {
         JavaRDD<DocClassificationResults> classifications = docs.map(doc -> {
             WeakHypothesis[] whs = whsBr.getValue();
             int[] indices = doc.getFeatures().indices();
-            HashMap<Integer, Integer> dict = new HashMap<Integer, Integer>();
+            HashMap<Integer, Integer> dict = new HashMap<>();
             for (int idx = 0; idx < indices.length; idx++) {
                 dict.put(indices[idx], indices[idx]);
             }
@@ -252,7 +248,7 @@ public class BoostClassifier implements Serializable {
      * @param parallelismDegree The number of data partitions used for each batch group.
      * @param labels0Based      True if the label indexes are 0-based, false if they are 1-based.
      * @param binaryProblem     True if we are resolving a binary problem, false otherwise.
-     * @param outputDir     The base Hadoop output directory where to save the classification results.
+     * @param outputDir         The base Hadoop output directory where to save the classification results.
      */
     public void classifyLibSvm(JavaSparkContext sc, String libSvmFile, int parallelismDegree, boolean labels0Based,
                                boolean binaryProblem, String outputDir) {
@@ -283,8 +279,6 @@ public class BoostClassifier implements Serializable {
         DataUtils.deleteHadoopFile(dataFile, true);
         Logging.l().info("done.");
     }
-
-
 
 
     private class PreliminaryDocumentClassification implements Serializable {

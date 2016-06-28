@@ -1,4 +1,3 @@
-
 /*
  *
  * ****************
@@ -370,7 +369,7 @@ public class AdaBoostMHLearner {
             for (int docIdx = 0; docIdx < feat.getDocuments().length; docIdx++) {
                 int docID = feat.getDocuments()[docIdx];
                 int[] labels = feat.getLabels()[docIdx];
-                HashMap<Integer, Integer> catDict = new HashMap<Integer, Integer>();
+                HashMap<Integer, Integer> catDict = new HashMap<>();
                 for (int labelIdx = 0; labelIdx < labels.length; labelIdx++) {
                     int currentCatID = labels[labelIdx];
                     double distValue = dm[currentCatID][docID];

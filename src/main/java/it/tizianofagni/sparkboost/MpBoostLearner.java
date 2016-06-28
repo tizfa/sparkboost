@@ -1,5 +1,3 @@
-
-
 /*
  *
  * ****************
@@ -50,7 +48,6 @@ public class MpBoostLearner {
      * The number of iterations.
      */
     private int numIterations;
-
 
 
     /**
@@ -238,13 +235,13 @@ public class MpBoostLearner {
         Broadcast<WeakHypothesis> distWH = sc.broadcast(localWH);
         Broadcast<double[][]> distDM = sc.broadcast(localDM);
 
-        Accumulable<ArrayList<SingleDMUpdate>, DMPartialResult> partialResults = sc.accumulable(new ArrayList<SingleDMUpdate>(),
+        Accumulable<ArrayList<SingleDMUpdate>, DMPartialResult> partialResults = sc.accumulable(new ArrayList<>(),
                 new DMPartialResultAccumulableParam());
 
         Double[] normArray = new Double[localDM.length];
         for (int i = 0; i < normArray.length; i++)
             normArray[i] = 0.0;
-        Accumulable<ArrayList<Double>, DMPartialResult> normalizations = sc.accumulable(new ArrayList<Double>(Arrays.asList(normArray)), new DMNormalizationAccumulableParam());
+        Accumulable<ArrayList<Double>, DMPartialResult> normalizations = sc.accumulable(new ArrayList<>(Arrays.asList(normArray)), new DMNormalizationAccumulableParam());
 
         docs.map(doc -> {
             int[] validFeatures = doc.getFeatures().indices();
@@ -441,7 +438,7 @@ public class MpBoostLearner {
             for (int docIdx = 0; docIdx < feat.getDocuments().length; docIdx++) {
                 int docID = feat.getDocuments()[docIdx];
                 int[] labels = feat.getLabels()[docIdx];
-                HashMap<Integer, Integer> catDict = new HashMap<Integer, Integer>();
+                HashMap<Integer, Integer> catDict = new HashMap<>();
                 for (int labelIdx = 0; labelIdx < labels.length; labelIdx++) {
                     int currentCatID = labels[labelIdx];
                     double distValue = dm[currentCatID][docID];
