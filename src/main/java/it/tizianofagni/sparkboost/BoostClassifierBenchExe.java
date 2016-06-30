@@ -111,10 +111,11 @@ public class BoostClassifierBenchExe {
         JavaRDD<MultilabelPoint> docs = DataUtils.loadLibSvmFileFormatDataWithIDs(sc, dataFile, labels0Based, binaryProblem, parallelismDegree);
         Logging.l().info("done.");
 
-        Iterator<DocClassificationResults> results = classifier.classify(sc, docs, parallelismDegree).toLocalIterator();
-        while (results.hasNext()) {
-            DocClassificationResults doc = results.next();
-        }
+        classifier.classify(sc, docs, parallelismDegree).foreachPartition(documents -> {
+            while (documents.hasNext()) {
+                DocClassificationResults doc = documents.next();
+            }
+        });
 
         Logging.l().info("Deleting no more necessary temporary files...");
         DataUtils.deleteHadoopFile(dataFile, true);
