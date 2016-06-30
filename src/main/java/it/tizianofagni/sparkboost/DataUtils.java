@@ -108,7 +108,7 @@ public class DataUtils {
             tables.add(new ClassificationPartialResults(id, sb.toString(), ctRes));
             return tables.iterator();
 
-        }, true).persist(StorageLevel.MEMORY_ONLY());
+        }, true).persist(StorageLevel.MEMORY_ONLY_SER());
 
         classifications.saveAsTextFile(outputPath);
 
