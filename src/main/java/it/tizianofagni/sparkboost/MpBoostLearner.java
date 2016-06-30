@@ -184,11 +184,13 @@ public class MpBoostLearner {
         double[][] localDM = initDistributionMatrix(numLabels, numDocs);
         for (int i = 0; i < numIterations; i++) {
 
+            Broadcast<double[][]> distDM = sc.broadcast(localDM);
+
             // Generate new weak hypothesis.
-            WeakHypothesis localWH = learnWeakHypothesis(localDM, labelDocuments, featureDocuments);
+            WeakHypothesis localWH = learnWeakHypothesis(distDM, labelDocuments, featureDocuments);
 
             // Update distribution matrix with the new hypothesis.
-            updateDistributionMatrix(sc, docs, localDM, localWH);
+            updateDistributionMatrix(sc, docs, localDM, distDM, localWH);
 
             // Save current generated weak hypothesis.
             computedWH[i] = localWH;
@@ -231,14 +233,13 @@ public class MpBoostLearner {
         return buildModel(docs);
     }
 
-    protected void updateDistributionMatrix(JavaSparkContext sc, JavaRDD<MultilabelPoint> docs, double[][] localDM, WeakHypothesis localWH) {
+    protected void updateDistributionMatrix(JavaSparkContext sc, JavaRDD<MultilabelPoint> docs, double[][] localDM, Broadcast<double[][]> distDM, WeakHypothesis localWH) {
         Broadcast<WeakHypothesis> distWH = sc.broadcast(localWH);
-        Broadcast<double[][]> distDM = sc.broadcast(localDM);
 
         Accumulable<ArrayList<SingleDMUpdate>, DMPartialResult> partialResults = sc.accumulable(new ArrayList<>(),
                 new DMPartialResultAccumulableParam());
 
-        Double[] normArray = new Double[localDM.length];
+        Double[] normArray = new Double[distDM.value().length];
         for (int i = 0; i < normArray.length; i++)
             normArray[i] = 0.0;
         Accumulable<ArrayList<Double>, DMPartialResult> normalizations = sc.accumulable(new ArrayList<>(Arrays.asList(normArray)), new DMNormalizationAccumulableParam());
@@ -362,7 +363,8 @@ public class MpBoostLearner {
         return dist;
     }
 
-    protected WeakHypothesis learnWeakHypothesis(double[][] localDM, JavaRDD<DataUtils.LabelDocuments> labelDocuments, JavaRDD<DataUtils.FeatureDocuments> featureDocuments) {
+    protected WeakHypothesis learnWeakHypothesis(Broadcast<double[][]> distDM, JavaRDD<DataUtils.LabelDocuments> labelDocuments, JavaRDD<DataUtils.FeatureDocuments> featureDocuments) {
+        double[][] localDM = distDM.value();
         int labelsSize = localDM.length;
         int docsSize = localDM[0].length;
 
@@ -407,7 +409,6 @@ public class MpBoostLearner {
         }
 
 
-        Broadcast<double[][]> distDM = sc.broadcast(localDM);
         Broadcast<double[]> weight_b1 = sc.broadcast(local_weight_b1);
         Broadcast<double[]> weight_bminus_1 = sc.broadcast(local_weight_bminus_1);
 
