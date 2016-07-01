@@ -70,7 +70,7 @@ public class BoostClassifier implements Serializable {
 
         Logging.l().info("Starting classification.");
         Logging.l().info("Load initial data and generating all necessary internal data representations...");
-        if (docs.partitions().size() != parallelismDegree) {
+        if (docs.partitions().size() < parallelismDegree) {
             Logging.l().info("Repartition documents from " + docs.partitions().size() + " to " + parallelismDegree + " partitions.");
             docs = docs.repartition(parallelismDegree);
         } else {
