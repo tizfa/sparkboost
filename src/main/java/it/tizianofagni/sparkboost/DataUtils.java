@@ -149,13 +149,10 @@ public class DataUtils {
      * Generate a new LibSvm output file giving each document an index corresponding to the index tha documents had on
      * original input LibSvm file.
      *
-     * @param sc         The spark context.
      * @param dataFile   The data file.
      * @param outputFile The output file.
      */
-    public static void generateLibSvmFileWithIDs(JavaSparkContext sc, String dataFile, String outputFile) {
-        if (sc == null)
-            throw new NullPointerException("The Spark Context is 'null'");
+    public static void generateLibSvmFileWithIDs(String dataFile, String outputFile) {
         if (dataFile == null || dataFile.isEmpty())
             throw new IllegalArgumentException("The dataFile is 'null'");
 

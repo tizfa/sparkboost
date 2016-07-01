@@ -240,7 +240,7 @@ public class BoostClassifier implements Serializable {
 
         Logging.l().info("Generating a temporary file containing all documents with an ID assigned to each one...");
         String dataFile = libSvmFile + ".withIDs";
-        DataUtils.generateLibSvmFileWithIDs(sc, libSvmFile, dataFile);
+        DataUtils.generateLibSvmFileWithIDs(libSvmFile, dataFile);
         Logging.l().info("done!");
 
         // Create an RDD with the input documents to be classified.
@@ -281,7 +281,7 @@ public class BoostClassifier implements Serializable {
 
         Logging.l().info("Generating a temporary file containing all documents with an ID assigned to each one...");
         String dataFile = libSvmFile + ".withIDs";
-        DataUtils.generateLibSvmFileWithIDs(sc, libSvmFile, dataFile);
+        DataUtils.generateLibSvmFileWithIDs(libSvmFile, dataFile);
         Logging.l().info("done!");
 
         // Create an RDD with the input documents to be classified.

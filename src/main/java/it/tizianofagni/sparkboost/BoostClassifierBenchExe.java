@@ -101,25 +101,17 @@ public class BoostClassifierBenchExe {
         }
 
 
-        Logging.l().info("Generating a temporary file containing all documents with an ID assigned to each one...");
-        String dataFile = inputFile + ".withIDs";
-        DataUtils.generateLibSvmFileWithIDs(sc, inputFile, dataFile);
-        Logging.l().info("done!");
-
         // Create an RDD with the input documents to be classified.
         Logging.l().info("Creating a RDD containing all the documents to be classified...");
-        JavaRDD<MultilabelPoint> docs = DataUtils.loadLibSvmFileFormatDataWithIDs(sc, dataFile, labels0Based, binaryProblem, parallelismDegree);
+        JavaRDD<MultilabelPoint> docs = DataUtils.loadLibSvmFileFormatDataWithIDs(sc, inputFile, labels0Based, binaryProblem, parallelismDegree);
         Logging.l().info("done.");
 
         classifier.classify(sc, docs, parallelismDegree).foreachPartition(documents -> {
             while (documents.hasNext()) {
                 DocClassificationResults doc = documents.next();
+                doc.getDocID();
             }
         });
-
-        Logging.l().info("Deleting no more necessary temporary files...");
-        DataUtils.deleteHadoopFile(dataFile, true);
-        Logging.l().info("done.");
 
         long endTime = System.currentTimeMillis();
         System.out.println("Execution time: " + (endTime - startTime) + " milliseconds.");
